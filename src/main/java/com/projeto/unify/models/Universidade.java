@@ -1,10 +1,15 @@
 package com.projeto.unify.models;
 
 import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "universidades")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Universidade {
 
     @Id
@@ -23,8 +28,6 @@ public class Universidade {
     @Column(length = 10)
     private String sigla;
 
-    public Universidade() {}
-
     public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla) {
         this.nome = nome;
         this.cnpj = cnpj;
@@ -32,44 +35,4 @@ public class Universidade {
         this.sigla = sigla;
     }
 
-    // Getters e Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public String getCnpj() {
-        return cnpj;
-    }
-
-    public void setCnpj(String cnpj) {
-        this.cnpj = cnpj;
-    }
-
-    public LocalDate getFundacao() {
-        return fundacao;
-    }
-
-    public void setFundacao(LocalDate fundacao) {
-        this.fundacao = fundacao;
-    }
-
-    public String getSigla() {
-        return sigla;
-    }
-
-    public void setSigla(String sigla) {
-        this.sigla = sigla;
-    }
 }
