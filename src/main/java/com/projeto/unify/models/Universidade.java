@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
 
+@Data
 @Entity
 @Table(name = "universidades")
 @Getter
@@ -35,11 +36,17 @@ public class Universidade {
     @Column(name = "campus")
     private List<String> campus = new ArrayList<>();
 
-    public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla) {
+    @OneToOne(mappedBy = "universidade", cascade = CascadeType.ALL)
+    private Representante representante;
+
+    public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla, Representante representante, List<String> campus
+    ) {
         this.nome = nome;
         this.cnpj = cnpj;
         this.fundacao = fundacao;
         this.sigla = sigla;
+        this.representante = representante;
+        this.campus = campus;
     }
 
 }
