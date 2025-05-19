@@ -14,7 +14,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class Aluno extends Pessoa {
 
-    @Column(nullable = false)
+    @OneToOne
     private Graduacao graduacao;
 
     @Column(nullable = false)
@@ -29,6 +29,10 @@ public class Aluno extends Pessoa {
     @Column(nullable = false)
     private float cr;
 
+    @ManyToOne
+    @JoinColumn(name = "turma_id")
+    private Turma turma;
+
     public Aluno(String cpf, LocalDate dataNasc, String nome, String sobrenome, Graduacao graduacao, String email, String matricula, String curso, float cr) {
         super(cpf, dataNasc, nome, sobrenome);
         this.graduacao = graduacao;
@@ -37,11 +41,5 @@ public class Aluno extends Pessoa {
         this.curso = curso;
         this.cr = cr;
     }
-
-
-
-
-
-
 
 }

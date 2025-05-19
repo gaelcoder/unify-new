@@ -1,6 +1,7 @@
 package com.projeto.unify.models;
 
-import com.projeto.unify.models.base.Pessoa;
+import java.util.List;
+import java.util.ArrayList;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,12 @@ public class Turma {
     @OneToMany
     @JoinColumn(name = "turma_id")
     private List<Aluno> alunos = new ArrayList<>();
+
+    public Turma(Materia materia, String turno, int limiteAlunos){
+        this.materia = materia;
+        this.turno = turno;
+        this.limiteAlunos = limiteAlunos;
+    }
 
     public boolean adicionarAluno(Aluno aluno) {
         if (alunos.size() < limiteAlunos) {

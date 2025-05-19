@@ -3,6 +3,8 @@ package com.projeto.unify.models;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "universidades")
@@ -27,6 +29,11 @@ public class Universidade {
 
     @Column(length = 10)
     private String sigla;
+
+    @ElementCollection
+    @CollectionTable(name = "campus_list", joinColumns = @JoinColumn(name = "id"))
+    @Column(name = "campus")
+    private List<String> campus = new ArrayList<>();
 
     public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla) {
         this.nome = nome;

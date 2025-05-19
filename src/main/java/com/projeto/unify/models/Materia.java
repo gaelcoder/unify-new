@@ -21,11 +21,16 @@ public class Materia {
     private int creditos;
 
     @Column(nullable = false)
-    private int CargaHoraria;
+    private int cargaHoraria;
 
-    @Column(nullable = false)
-    private String descricao;
+    @Column(nullable = true)
+    private int creditosNecessarios;
 
-
+    public Materia(String titulo, int creditos, int cargaHoraria) {
+        this.titulo = titulo;
+        this.creditos = creditos;
+        this.cargaHoraria = cargaHoraria;
+        this.creditosNecessarios = 0;
+    }
 
 }
