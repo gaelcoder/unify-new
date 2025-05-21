@@ -1,12 +1,12 @@
 package com.projeto.unify.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
 
-@Data
 @Entity
 @Table(name = "universidades")
 @Getter
@@ -36,7 +36,9 @@ public class Universidade {
     @Column(name = "campus")
     private List<String> campus = new ArrayList<>();
 
-    @OneToOne(mappedBy = "universidade", cascade = CascadeType.ALL)
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "representante_id")
+    @JsonManagedReference
     private Representante representante;
 
     public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla, Representante representante, List<String> campus
@@ -48,5 +50,4 @@ public class Universidade {
         this.representante = representante;
         this.campus = campus;
     }
-
 }

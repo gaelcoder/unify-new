@@ -4,7 +4,12 @@ import com.projeto.unify.dtos.RepresentanteDTO;
 import com.projeto.unify.models.Representante;
 import com.projeto.unify.repositories.RepresentanteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,5 +28,33 @@ public class RepresentanteService {
                 dto.getCargo()
         );
         return representanteRepository.save(representante);
+    }
+
+    public List<Representante> listarTodos() {
+        return representanteRepository.findAll();
+    }
+
+    public List<Representante> listarDisponiveis() {
+        return representanteRepository.findAll().stream()
+                .filter(r -> r.getUniversidade() == null)
+                .collect(Collectors.toList());
+    }
+
+    public Representante buscarPorId(Long id) {
+        return representanteRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Representante não encontrado"));
+    }
+
+    public void excluir(Long id) {
+        Representante representante = buscarPorId(id);
+
+        // Se estiver associado a uma universidade, desassociar primeiro
+        if (representante.getUniversidade() != null) {
+            representante.getUniversidade().setRepresentante(null);
+            representante.setUniversidade(null);
+        }
+
+        representanteRepository.delete(representante);
     }
 }

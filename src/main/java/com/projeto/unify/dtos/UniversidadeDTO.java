@@ -21,5 +21,8 @@ public class UniversidadeDTO {
     private String sigla;
 
     private List<String> campus;
+
+    private Long representanteId;
+
 }
 
