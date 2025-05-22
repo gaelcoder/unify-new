@@ -2,7 +2,9 @@ package com.projeto.unify.services;
 
 import com.projeto.unify.dtos.RepresentanteDTO;
 import com.projeto.unify.models.Representante;
+import com.projeto.unify.models.Universidade;
 import com.projeto.unify.repositories.RepresentanteRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RepresentanteService {
 
+    private final UsuarioService usuarioService;
     private final RepresentanteRepository representanteRepository;
 
     public Representante criar(RepresentanteDTO dto) {
@@ -70,4 +73,25 @@ public class RepresentanteService {
 
         representanteRepository.delete(representante);
     }
+
+    @Transactional
+    public void associarAUniversidade(Long representanteId, Universidade universidade) {
+        Representante representante = buscarPorId(representanteId);
+
+        // Verificar se o representante já está associado
+        if (representante.getUniversidade() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Representante já está associado a uma universidade");
+        }
+
+        // Associar representante à universidade
+        representante.setUniversidade(universidade);
+
+        // Criar usuário administrador para o representante
+        usuarioService.criarAdminUniversidade(representante, universidade);
+
+        representanteRepository.save(representante);
+    }
+
+
 }
