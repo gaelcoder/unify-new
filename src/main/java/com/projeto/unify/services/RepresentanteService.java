@@ -30,6 +30,19 @@ public class RepresentanteService {
         return representanteRepository.save(representante);
     }
 
+    public Representante atualizar(Long id, RepresentanteDTO dto) {
+        Representante representante = buscarPorId(id);
+
+        representante.setNome(dto.getNome());
+        representante.setSobrenome(dto.getSobrenome());
+        representante.setEmail(dto.getEmail());
+        representante.setTelefone(dto.getTelefone());
+        representante.setCargo(dto.getCargo());
+
+        return representanteRepository.save(representante);
+    }
+
+
     public List<Representante> listarTodos() {
         return representanteRepository.findAll();
     }

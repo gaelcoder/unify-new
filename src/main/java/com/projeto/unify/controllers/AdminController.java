@@ -48,6 +48,12 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/representantes/{id}")
+    public ResponseEntity<Representante> buscarRepresentantePorId(@PathVariable Long id) {
+        return ResponseEntity.ok(representanteService.buscarPorId(id));
+    }
+
+
     @GetMapping("/representantes")
     public ResponseEntity<List<Representante>> listarRepresentantes() {
         return ResponseEntity.ok(representanteService.listarTodos());
@@ -73,6 +79,23 @@ public class AdminController {
         universidadeService.excluir(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/representantes/{id}")
+    public ResponseEntity<Void> excluirRepresentante(@PathVariable Long id) {
+        representanteService.excluir(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/representantes/{id}")
+    public ResponseEntity<?> atualizarRepresentante(@PathVariable Long id, @RequestBody RepresentanteDTO dto) {
+        try {
+            Representante representante = representanteService.atualizar(id, dto);
+            return ResponseEntity.ok(representante);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
     @DeleteMapping("/universidades/{id}/representante")
     public ResponseEntity<Universidade> desassociarRepresentante(@PathVariable Long id) {

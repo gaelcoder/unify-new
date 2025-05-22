@@ -27,6 +27,23 @@ public class UniversidadeService {
                 null,
                 dto.getCampus()
         );
+
+        universidade = universidadeRepository.save(universidade);
+
+        if (dto.getRepresentanteId() != null) {
+            Representante representante = representanteRepository.findById(dto.getRepresentanteId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Representante não encontrado"));
+
+            universidade.setRepresentante(representante);
+            representante.setUniversidade(universidade);
+
+            representanteRepository.save(representante);
+            universidade = universidadeRepository.save(universidade);
+        }
+
+
+
         return universidadeRepository.save(universidade);
     }
 
