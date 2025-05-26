@@ -29,11 +29,16 @@ public class Professor extends Pessoa {
     @OneToMany(mappedBy = "professor", fetch = FetchType.LAZY)
     private Set<Turma> turmas = new HashSet<>();
 
+    @ManyToOne
+    @JoinColumn(name = "universidade_id", nullable = false)
+    private Universidade universidade;
+
     public Professor(String cpf, LocalDate dataNasc, String nome, String sobrenome, String setor, double salario, Universidade universidade, String titulacao, String email) {
         super(cpf, dataNasc, nome, sobrenome);
         this.salario = salario;
         this.titulacao = titulacao;
         this.email = email;
+        this.universidade = universidade;
     }
 
 }

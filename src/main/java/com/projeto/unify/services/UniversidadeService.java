@@ -83,7 +83,7 @@ public class UniversidadeService {
 
                 // Criar usuário admin para o representante
                 logger.info("Criando usuário administrador para o representante");
-                usuarioService.criarAdminUniversidade(representante, universidade);
+                representanteService.associarRepresentante(universidade, representante, representante.getEmail());
 
                 logger.info("Representante associado com sucesso e credenciais criadas");
             } catch (Exception e) {
@@ -165,7 +165,7 @@ public class UniversidadeService {
 
             // Criar usuário admin para o representante
             logger.info("Criando usuário administrador para o representante");
-            usuarioService.criarAdminUniversidade(representante, universidade);
+            representanteService.associarRepresentante(universidade, representante, representante.getEmail());
 
             logger.info("Representante associado com sucesso e credenciais criadas");
             return universidade;

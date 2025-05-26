@@ -36,6 +36,18 @@ public class Universidade {
     @Column(name = "campus")
     private List<String> campus = new ArrayList<>();
 
+    @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    private List<Aluno> alunos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    private List<Funcionario> funcionarios = new ArrayList<>();
+
+    @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    private List<Professor> professores = new ArrayList<>();
+
+    @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    private List<Graduacao> graduacoes = new ArrayList<>();
+
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "representante_id")
     @JsonManagedReference
@@ -49,5 +61,6 @@ public class Universidade {
         this.sigla = sigla;
         this.representante = representante;
         this.campus = campus;
+        this.graduacoes = new ArrayList<>();
     }
 }

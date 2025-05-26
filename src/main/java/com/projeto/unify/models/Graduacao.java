@@ -3,6 +3,11 @@ package com.projeto.unify.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+
 
 @Entity
 @Table(name = "graduacoes")
@@ -28,12 +33,24 @@ public class Graduacao {
     @OneToOne
     private Professor coordenadorDoCurso;
 
+    @ManyToOne
+    @JoinColumn(name = "universidade_id", nullable = false)
+    private Universidade universidade;
+
+    @ManyToMany(mappedBy = "graduacoes")
+    private Set<Materia> materias = new HashSet<>();
+
+    @OneToMany(mappedBy = "graduacao")
+    private List<Aluno> alunos = new ArrayList<>();
+
+
     private String campusDisponivel;
 
-    public Graduacao(String titulo, int semestres, String codigoCurso) {
+    public Graduacao(String titulo, int semestres, String codigoCurso, Universidade universidade) {
         this.titulo = titulo;
         this.semestres = semestres;
         this.codigoCurso = codigoCurso;
+        this.universidade = universidade;
     }
 
 }

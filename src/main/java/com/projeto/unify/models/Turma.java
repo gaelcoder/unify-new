@@ -37,6 +37,10 @@ public class Turma {
     @Min(value = 1, message = "O limite de alunos deve ser pelo menos 1")
     private int limiteAlunos;
 
+    @ManyToOne
+    @JoinColumn(name = "graduacao_id", nullable = false)
+    private Graduacao graduacao;
+
     @OneToMany(mappedBy = "turma", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Aluno> alunos = new ArrayList<>();
 

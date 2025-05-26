@@ -7,12 +7,11 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class AuthResponse {
-    private String token;
     private String email;
-    private String tipo;  // Tipo de usuário (ADMIN_GERAL, ADMIN_UNIVERSIDADE, etc)
+    private String tipo;
+    private String token;
     private boolean primeiroAcesso;
-    private String mensagem;
 }
