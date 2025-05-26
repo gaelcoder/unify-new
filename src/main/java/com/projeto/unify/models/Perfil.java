@@ -21,10 +21,14 @@ public class Perfil {
     private TipoPerfil nome;
 
     public enum TipoPerfil {
-        ROLE_ADMIN_GERAL,
-        ROLE_ADMIN_UNIVERSIDADE,
-        ROLE_PROFESSOR,
-        ROLE_ALUNO,
-        ROLE_FUNCIONARIO;
+        ROLE_ADMIN_GERAL,             // Administrador geral do sistema
+        ROLE_ADMIN_UNIVERSIDADE,      // Administrador de uma universidade específica
+        ROLE_FUNCIONARIO_RH,          // Funcionário de RH
+        ROLE_PROFESSOR,               // Professor
+        ROLE_ALUNO                    // Aluno
+    }
+
+    public Perfil(TipoPerfil nome) {
+        this.nome = nome;
     }
 }

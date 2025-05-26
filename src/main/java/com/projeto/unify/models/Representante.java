@@ -30,6 +30,10 @@ public class Representante extends Pessoa {
     @JsonBackReference
     private Universidade universidade;
 
+    @OneToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
     public Representante(String cpf, LocalDate dataNascimento, String nome, String sobrenome, String email, String telefone, String cargo) {
         super(cpf, dataNascimento, nome, sobrenome);
         this.cargo = cargo;

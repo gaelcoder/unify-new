@@ -13,7 +13,7 @@ import lombok.Setter;
 public class AdministradorGeral {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(nullable = false)
@@ -22,7 +22,7 @@ public class AdministradorGeral {
     @Column(nullable = false)
     private String sobrenome;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = {CascadeType.MERGE, CascadeType.REFRESH})
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 }

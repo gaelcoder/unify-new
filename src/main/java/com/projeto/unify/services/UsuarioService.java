@@ -1,146 +1,76 @@
 package com.projeto.unify.services;
 
 import com.projeto.unify.models.Perfil;
-import com.projeto.unify.models.Representante;
-import com.projeto.unify.models.Universidade;
 import com.projeto.unify.models.Usuario;
 import com.projeto.unify.repositories.PerfilRepository;
 import com.projeto.unify.repositories.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import java.security.SecureRandom;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class UsuarioService {
-
-    private static final Logger logger = LoggerFactory.getLogger(UsuarioService.class);
+public class UsuarioService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
     private final PerfilRepository perfilRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
 
-
-    // Para inicialização do sistema - criar administrador geral
-    @Transactional
-    public Usuario criarAdminGeral(String email, String senha, boolean primeiroAcesso) {
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado");
-        }
-
-        Perfil perfilAdmin = obterOuCriarPerfil(Perfil.TipoPerfil.ROLE_ADMIN_GERAL);
-
-        Usuario usuario = new Usuario();
-        usuario.setEmail(email);
-        usuario.setSenha(passwordEncoder.encode(senha));
-        usuario.setPrimeiroAcesso(primeiroAcesso);
-        usuario.getPerfis().add(perfilAdmin);
-
-        return usuarioRepository.save(usuario);
-    }
-
-    public boolean existsByEmail(String email) {
-        return usuarioRepository.existsByEmail(email);
-    }
-
-    // Para criar administrador de universidade vinculado a um representante
-    @Transactional
-    public Usuario criarAdminUniversidade(Representante representante, Universidade universidade) {
-        // Gerar email institucional para o administrador da universidade
-        String emailAdmin = gerarEmailAdminUniversidade(representante, universidade);
-
-        // Verificar se já existe
-        if (usuarioRepository.existsByEmail(emailAdmin)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Já existe um administrador para esta universidade");
-        }
-
-        // Gerar senha temporária
-        String senhaTemporaria = gerarSenhaTemporaria();
-
-        Perfil perfilAdminUniv = obterOuCriarPerfil(Perfil.TipoPerfil.ROLE_ADMIN_UNIVERSIDADE);
-
-        // Criar usuário
-        Usuario usuario = new Usuario();
-        usuario.setEmail(emailAdmin);
-        usuario.setSenha(passwordEncoder.encode(senhaTemporaria));
-        usuario.setPrimeiroAcesso(true); // Forçar troca de senha no primeiro acesso
-        usuario.getPerfis().add(perfilAdminUniv);
-
-        usuario = usuarioRepository.save(usuario);
-
-        // Enviar email com as credenciais
-        emailService.enviarCredenciaisAcesso(
-                representante.getEmail(), // Email pessoal do representante
-                emailAdmin,               // Email institucional criado
-                senhaTemporaria,          // Senha temporária
-                representante.getNome()   // Nome para personalização
-        );
-
-        return usuario;
-    }
-
-    private String gerarEmailAdminUniversidade(Representante representante, Universidade universidade) {
-        String nomeNormalizado = normalizarParaEmail(representante.getNome());
-        String sobrenomeNormalizado = normalizarParaEmail(representante.getSobrenome());
-        String universidadeNormalizada = normalizarParaEmail(universidade.getNome());
-
-        return String.format("%s.%s@adm.%s.unify.edu.com",
-                nomeNormalizado, sobrenomeNormalizado, universidadeNormalizada);
-    }
-
-    private String normalizarParaEmail(String texto) {
-        return texto.toLowerCase()
-                .replaceAll("[áàãâä]", "a")
-                .replaceAll("[éèêë]", "e")
-                .replaceAll("[íìîï]", "i")
-                .replaceAll("[óòõôö]", "o")
-                .replaceAll("[úùûü]", "u")
-                .replaceAll("[ç]", "c")
-                .replaceAll("[^a-z0-9]", "");
-    }
-
-    private String gerarSenhaTemporaria() {
-        // Gerar senha aleatória de 10 caracteres
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        StringBuilder senha = new StringBuilder();
-        SecureRandom random = new SecureRandom();
-
-        for (int i = 0; i < 10; i++) {
-            senha.append(chars.charAt(random.nextInt(chars.length())));
-        }
-
-        return senha.toString();
-    }
-
-    private Perfil obterOuCriarPerfil(Perfil.TipoPerfil tipoPerfil) {
-        return perfilRepository.findByNome(tipoPerfil)
-                .orElseGet(() -> {
-                    Perfil novoPerfil = new Perfil();
-                    novoPerfil.setNome(tipoPerfil);
-                    return perfilRepository.save(novoPerfil);
-                });
-    }
-
-    // Método para forçar troca de senha no primeiro acesso
-    @Transactional
-    public void trocarSenha(String email, String senhaAtual, String novaSenha) {
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o email: " + email));
 
-        if (!passwordEncoder.matches(senhaAtual, usuario.getSenha())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Senha atual incorreta");
-        }
+        List<SimpleGrantedAuthority> authorities = usuario.getPerfis().stream()
+                .map(perfil -> new SimpleGrantedAuthority(perfil.getNome().name()))
+                .collect(Collectors.toList());
+
+        return new User(usuario.getEmail(), usuario.getSenha(), authorities);
+    }
+
+    public Usuario findByEmail(String email) {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+    }
+
+    @Transactional
+    public void atualizarSenha(Long userId, String novaSenha) {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         usuario.setSenha(passwordEncoder.encode(novaSenha));
         usuario.setPrimeiroAcesso(false);
+
         usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public Perfil obterOuCriarPerfil(Perfil.TipoPerfil tipoPerfil) {
+        Optional<Perfil> perfilExistente = perfilRepository.findByNome(tipoPerfil);
+
+        return perfilExistente.orElseGet(() -> {
+            Perfil novoPerfil = new Perfil(tipoPerfil);
+            return perfilRepository.save(novoPerfil);
+        });
+    }
+
+    public void criarAdminGeral(String adminEmail, String adminSenha, boolean b) {
+        Usuario admin = new Usuario();
+        admin.setEmail(adminEmail);
+        admin.setSenha(passwordEncoder.encode(adminSenha));
+    }
+
+    public boolean existsByEmail(String adminEmail) {
+        return usuarioRepository.existsByEmail(adminEmail);
     }
 }

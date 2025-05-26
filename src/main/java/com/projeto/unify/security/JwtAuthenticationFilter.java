@@ -1,13 +1,14 @@
-package com.projeto.unify.config;
+package com.projeto.unify.security;
 
-import com.projeto.unify.services.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -16,7 +17,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -30,50 +35,50 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-
-        // Pegar o cabeçalho de autorização
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
+        log.debug("Processing request to '{}', Authorization header: {}", request.getRequestURI(), authHeader);
 
-        // Se não tiver o cabeçalho ou não começar com "Bearer ", passa para o próximo filtro
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.debug("No Bearer token found in request to '{}'", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extrai o token do cabeçalho
-        jwt = authHeader.substring(7);
-
         try {
-            // Extrai o email do token
-            userEmail = jwtService.extractUsername(jwt);
+            final String jwt = authHeader.substring(7);
+            final String userEmail = jwtService.extrairUsername(jwt);
+            log.debug("JWT token found for user: {}", userEmail);
 
-            // Se houver um email e não houver autenticação no contexto
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Carrega o usuário do banco de dados
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                log.debug("User details loaded: {}, Authorities: {}", userDetails.getUsername(), userDetails.getAuthorities());
 
-                // Verifica se o token é válido
-                if (jwtService.isTokenValid(jwt, userDetails)) {
-                    // Cria uma autenticação e a coloca no contexto de segurança
+                if (jwtService.isTokenValido(jwt, userDetails)) {
+                    // Extract authorities from token
+                    String authoritiesStr = jwtService.extrairClaim(jwt, claims -> claims.get("authorities", String.class));
+                    List<SimpleGrantedAuthority> authorities = Arrays.stream(authoritiesStr.split(","))
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
+
+                    log.debug("Extracted authorities from token: {}", authorities);
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
-                            userDetails.getAuthorities()
+                            authorities // Use authorities from token
                     );
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    log.debug("Authentication token set in SecurityContext for user: {} with authorities: {}",
+                            userEmail, authorities);
+                } else {
+                    log.debug("Token validation failed for user: {}", userEmail);
                 }
             }
         } catch (Exception e) {
-            // Se houver erro na validação do token, apenas continua o filtro
-            // Não autenticará o usuário
+            log.error("Error processing JWT token", e);
         }
 
-        // Continua para o próximo filtro
         filterChain.doFilter(request, response);
     }
 }
