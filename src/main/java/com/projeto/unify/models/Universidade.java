@@ -31,6 +31,9 @@ public class Universidade {
     @Column(length = 10)
     private String sigla;
 
+    @Column(name = "logo_path")
+    private String logoPath;
+
     @ElementCollection
     @CollectionTable(name = "campus_list", joinColumns = @JoinColumn(name = "id"))
     @Column(name = "campus")
@@ -53,12 +56,15 @@ public class Universidade {
     @JsonManagedReference
     private Representante representante;
 
-    public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla, Representante representante, List<String> campus
+
+    // Constructor with logoPath
+    public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla, String logoPath, Representante representante, List<String> campus
     ) {
         this.nome = nome;
         this.cnpj = cnpj;
         this.fundacao = fundacao;
         this.sigla = sigla;
+        this.logoPath = logoPath;
         this.representante = representante;
         this.campus = campus;
         this.graduacoes = new ArrayList<>();

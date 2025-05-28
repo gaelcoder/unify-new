@@ -4,7 +4,10 @@ import com.projeto.unify.dtos.TrocarSenhaRequest;
 import com.projeto.unify.dtos.AuthResponse;
 import com.projeto.unify.dtos.LoginRequest;
 import com.projeto.unify.models.Perfil;
+import com.projeto.unify.models.Representante;
+import com.projeto.unify.models.Universidade;
 import com.projeto.unify.models.Usuario;
+import com.projeto.unify.repositories.RepresentanteRepository;
 import com.projeto.unify.security.JwtService;
 import com.projeto.unify.services.AuthService;
 import com.projeto.unify.services.UsuarioService;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,36 +36,44 @@ public class AuthController {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final AuthService authService;
+    private final RepresentanteRepository representanteRepository;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        // Autenticar usuário
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
         );
 
-        // Gerar token JWT
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String token = jwtService.gerarToken(userDetails);
 
-        // Obter tipo do usuário (role)
         String tipo = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        // Obter informações adicionais do usuário
         Usuario usuario = usuarioService.findByEmail(request.getEmail());
 
-        // Montar resposta
-        AuthResponse authResponse = AuthResponse.builder()
+        AuthResponse.AuthResponseBuilder authResponseBuilder = AuthResponse.builder()
                 .id(usuario.getId())
                 .email(usuario.getEmail())
                 .tipo(tipo)
                 .token(token)
-                .primeiroAcesso(usuario.isPrimeiroAcesso())
-                .build();
+                .primeiroAcesso(usuario.isPrimeiroAcesso());
 
-        return ResponseEntity.ok(authResponse);
+        if (tipo.contains(Perfil.TipoPerfil.ROLE_ADMIN_UNIVERSIDADE.name())) {
+            Optional<Representante> representanteOpt = representanteRepository.findByUsuarioId(usuario.getId());
+            if (representanteOpt.isPresent()) {
+                Representante representante = representanteOpt.get();
+                Universidade universidade = representante.getUniversidade();
+                if (universidade != null) {
+                    authResponseBuilder.universidadeId(universidade.getId());
+                    authResponseBuilder.universidadeNome(universidade.getNome());
+                    authResponseBuilder.universidadeLogoPath(universidade.getLogoPath());
+                }
+            }
+        }
+
+        return ResponseEntity.ok(authResponseBuilder.build());
     }
 
     @PostMapping("/primeiro-acesso")
@@ -75,7 +87,6 @@ public class AuthController {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String jwt = authHeader.substring(7);
-            // Chamar o serviço para invalidar o token
             authService.invalidarToken(jwt);
         }
         return ResponseEntity.ok().build();

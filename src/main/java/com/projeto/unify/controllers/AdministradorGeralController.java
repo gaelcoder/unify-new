@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -57,10 +58,11 @@ public class AdministradorGeralController {
     // ENDPOINTS POST
 
 
-    @PostMapping("/universidades")
-    public ResponseEntity<?> criarUniversidade(@RequestBody UniversidadeDTO dto) {
+    @PostMapping(value = "/universidades", consumes = { "multipart/form-data" })
+    public ResponseEntity<?> criarUniversidade(@RequestPart("universidade") UniversidadeDTO dto,
+                                               @RequestPart(value = "logo", required = false) MultipartFile logoFile) {
         try {
-            Universidade universidade = universidadeService.criar(dto);
+            Universidade universidade = universidadeService.criar(dto, logoFile);
             return ResponseEntity.status(HttpStatus.CREATED).body(universidade);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -15,4 +15,7 @@ public class AuthResponse {
     private String tipo;
     private String token;
     private boolean primeiroAcesso;
+    private Long universidadeId;
+    private String universidadeNome;
+    private String universidadeLogoPath;
 }

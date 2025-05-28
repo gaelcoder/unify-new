@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN_GERAL")
                         .anyRequest().authenticated()
                 )

@@ -83,7 +83,7 @@ public class RepresentanteService {
         representanteRepository.delete(representante);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public Representante associarRepresentante(Universidade universidade, Representante representante, String emailPessoal) {
         // Preservar lógica existente de associação
         representante.setUniversidade(universidade);

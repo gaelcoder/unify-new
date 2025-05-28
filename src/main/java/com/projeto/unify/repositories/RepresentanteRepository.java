@@ -1,6 +1,7 @@
 package com.projeto.unify.repositories;
 
 import com.projeto.unify.models.Representante;
+import com.projeto.unify.models.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
@@ -11,4 +12,6 @@ public interface RepresentanteRepository extends JpaRepository<Representante, Lo
     boolean existsByEmail(String email);
     Optional<Representante> findByEmail(String email);
     Optional<Representante> findByCpf(String cpf);
+    Optional<Representante> findByUsuario(Usuario usuario);
+    Optional<Representante> findByUsuarioId(Long usuarioId);
 }
