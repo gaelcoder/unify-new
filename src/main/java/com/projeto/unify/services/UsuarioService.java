@@ -73,4 +73,9 @@ public class UsuarioService implements UserDetailsService {
     public boolean existsByEmail(String adminEmail) {
         return usuarioRepository.existsByEmail(adminEmail);
     }
+
+    @Transactional
+    public Usuario save(Usuario usuario) {
+        return usuarioRepository.save(usuario);
+    }
 }

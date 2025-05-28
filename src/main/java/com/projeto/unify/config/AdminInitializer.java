@@ -35,11 +35,11 @@ public class AdminInitializer implements CommandLineRunner {
     private String adminSobrenome;
 
     @Override
-    @Transactional
     public void run(String... args) {
         initializeAdmin();
     }
 
+    @Transactional
     private void initializeAdmin() {
         // Verificar se o admin já existe
         if (usuarioRepository.findByEmail(adminEmail).isPresent()) {

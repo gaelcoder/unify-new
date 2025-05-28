@@ -8,7 +8,8 @@ import com.projeto.unify.models.Usuario;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.projeto.unify.repositories.RepresentanteRepository;
 import com.projeto.unify.repositories.UsuarioRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -82,7 +83,7 @@ public class RepresentanteService {
         representanteRepository.delete(representante);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Representante associarRepresentante(Universidade universidade, Representante representante, String emailPessoal) {
         // Preservar lógica existente de associação
         representante.setUniversidade(universidade);
@@ -208,7 +209,7 @@ public class RepresentanteService {
             parteUniversidade = nomeUniversidade;
         }
 
-        return nome + "." + sobrenome + "@adm.unify." + parteUniversidade + ".edu.com";
+        return nome + "." + sobrenome + "@adm." + parteUniversidade + ".unify.edu.com";
     }
 
     /**
@@ -219,7 +220,7 @@ public class RepresentanteService {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Representante desassociarRepresentante(Representante representante) {
         // Desativar conta de usuário
         Usuario usuario = representante.getUsuario();

@@ -54,6 +54,7 @@ public class AuthController {
 
         // Montar resposta
         AuthResponse authResponse = AuthResponse.builder()
+                .id(usuario.getId())
                 .email(usuario.getEmail())
                 .tipo(tipo)
                 .token(token)

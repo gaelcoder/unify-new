@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.util.List;
 
@@ -73,17 +74,17 @@ public class UniversidadeService {
         if (representante != null) {
             try {
                 logger.info("Associando representante ID: {} à universidade recém-criada", representante.getId());
-                // Associar manualmente
+                // Associar representante à universidade
+                logger.info("Associando representante à universidade");
                 representante.setUniversidade(universidade);
                 universidade.setRepresentante(representante);
 
-                // Salvar ambas as entidades
-                representanteRepository.save(representante);
+                // Salvar a universidade com o representante associado
                 universidade = universidadeRepository.save(universidade);
 
-                // Criar usuário admin para o representante
-                logger.info("Criando usuário administrador para o representante");
-                representanteService.associarRepresentante(universidade, representante, representante.getEmail());
+                // Criar usuário admin para o representante e associar
+                logger.info("Criando usuário administrador para o representante e associando");
+                this.representanteService.associarRepresentante(universidade, representante, representante.getEmail());
 
                 logger.info("Representante associado com sucesso e credenciais criadas");
             } catch (Exception e) {
@@ -125,7 +126,6 @@ public class UniversidadeService {
         return universidadeRepository.save(universidade);
     }
 
-    @Transactional
     public Universidade associarRepresentante(Long universidadeId, Long representanteId) {
         logger.info("Iniciando associação do representante ID: {} à universidade ID: {}",
                 representanteId, universidadeId);
@@ -154,33 +154,47 @@ public class UniversidadeService {
         }
 
         try {
-            // Associar representante à universidade
-            logger.info("Associando representante à universidade");
+            // Set relationships in memory first - these are not persisted yet
+            logger.info("Setting representative on university and vice-versa in memory");
             representante.setUniversidade(universidade);
             universidade.setRepresentante(representante);
 
-            // Salvar as entidades
-            representanteRepository.save(representante);
-            universidade = universidadeRepository.save(universidade);
+            // Call RepService. This runs in a new transaction and saves the Representante
+            // and its associated Usuario.
+            logger.info("Calling RepresentanteService to associate and save representative details");
+            Representante managedRepresentante = this.representanteService.associarRepresentante(universidade, representante, representante.getEmail());
 
-            // Criar usuário admin para o representante
-            logger.info("Criando usuário administrador para o representante");
-            representanteService.associarRepresentante(universidade, representante, representante.getEmail());
+            // Now, save the universidade with its new representative in a separate transaction.
+            universidade.setRepresentante(managedRepresentante); // Ensure we use the returned, managed rep
+            Universidade savedUniversidade = salvarUniversidadeTransactional(universidade);
 
             logger.info("Representante associado com sucesso e credenciais criadas");
-            return universidade;
+            return savedUniversidade;
         } catch (Exception e) {
             logger.error("Erro ao associar representante: {}", e.getMessage(), e);
 
-            // Se o erro for porque já existe um admin, registre mas não interrompa
             if (e.getMessage() != null && e.getMessage().contains("Já existe um administrador")) {
                 logger.warn("Já existe um administrador para esta universidade, mas a associação foi realizada");
-                return universidade;
+                // Decide if you still want to return universidade or throw
+                // For now, let's re-throw to be consistent with other errors
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Erro ao associar representante: " + e.getMessage());
             }
 
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Erro ao associar representante: " + e.getMessage());
+            // Ensure a ResponseStatusException is thrown for other cases from this try-catch
+            if (e instanceof ResponseStatusException) {
+                throw e;
+            } else {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Erro ao associar representante: " + e.getMessage());
+            }
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Universidade salvarUniversidadeTransactional(Universidade universidade) {
+        logger.info("Salvando universidade transactionalmente: {}", universidade.getNome());
+        return universidadeRepository.save(universidade);
     }
 
     @Transactional
@@ -193,6 +207,8 @@ public class UniversidadeService {
             logger.info("Removendo associação com representante: {} {}",
                     representante.getNome(), representante.getSobrenome());
 
+            Usuario usuarioDoRepresentante = representante.getUsuario(); // Get the Usuario
+
             // Desassociar ambos os lados
             representante.setUniversidade(null);
             universidade.setRepresentante(null);
@@ -201,10 +217,18 @@ public class UniversidadeService {
             representanteRepository.save(representante);
             universidade = universidadeRepository.save(universidade);
 
+            // Desativar o usuário associado ao representante
+            if (usuarioDoRepresentante != null) {
+                logger.info("Desativando usuário: {}", usuarioDoRepresentante.getEmail());
+                usuarioDoRepresentante.setAtivo(false);
+                usuarioService.save(usuarioDoRepresentante); // Save using UsuarioService
+                logger.info("Usuário {} desativado com sucesso.", usuarioDoRepresentante.getEmail());
+            } else {
+                logger.warn("Representante {} não possui um usuário associado para desativar.", representante.getNome());
+            }
+
             logger.info("Representante desassociado com sucesso");
 
-            // Aqui você poderia ter uma lógica para desativar o usuário admin
-            // associado a este representante
         } else {
             logger.info("Universidade não possui representante associado");
         }
