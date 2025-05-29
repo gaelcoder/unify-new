@@ -42,10 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/**").permitAll()
-                        .requestMatchers("/api/admin-geral/**").hasAuthority("ROLE_ADMIN_GERAL")
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN_GERAL")
                         .requestMatchers("/api/admin-universidade/**").hasAuthority("ROLE_ADMIN_UNIVERSIDADE")
-                        .requestMatchers("/api/representantes/**").hasAuthority("ROLE_ADMIN_GERAL")
-                        .requestMatchers("/api/universidades/**").hasAuthority("ROLE_ADMIN_GERAL")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -60,8 +58,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(List.of("http://localhost:4200", "http://localhost:59458"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
