@@ -144,7 +144,8 @@ public class RepresentanteService {
      * Se o nome da universidade for maior que 10 caracteres, usa a sigla
      */
     private String gerarEmailInstitucional(Representante representante, Universidade universidade) {
-        String nome = representante.getNome().toLowerCase()
+        String primeiroNome = representante.getNome().toLowerCase()
+                .split(" ")[0]
                 .replace(" ", "")
                 .replace("ç", "c")
                 .replace("á", "a")
@@ -160,27 +161,26 @@ public class RepresentanteService {
                 .replace("ú", "u")
                 .replace("ü", "u");
 
-        String sobrenome = representante.getSobrenome().toLowerCase()
-                .replace(" ", "")
-                .replace("ç", "c")
-                .replace("á", "a")
-                .replace("à", "a")
-                .replace("ã", "a")
-                .replace("â", "a")
-                .replace("é", "e")
-                .replace("ê", "e")
-                .replace("í", "i")
-                .replace("ó", "o")
-                .replace("ô", "o")
-                .replace("õ", "o")
-                .replace("ú", "u")
-                .replace("ü", "u");
-
-        // Pegar último sobrenome se houver espaços
-        if (sobrenome.contains(" ")) {
-            String[] partes = sobrenome.split(" ");
-            sobrenome = partes[partes.length - 1];
+        String ultimoSobrenome = representante.getSobrenome().toLowerCase();
+        if (ultimoSobrenome.contains(" ")) {
+            String[] partes = ultimoSobrenome.split(" ");
+            ultimoSobrenome = partes[partes.length - 1];
         }
+        ultimoSobrenome = ultimoSobrenome
+                .replace(" ", "")
+                .replace("ç", "c")
+                .replace("á", "a")
+                .replace("à", "a")
+                .replace("ã", "a")
+                .replace("â", "a")
+                .replace("é", "e")
+                .replace("ê", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ô", "o")
+                .replace("õ", "o")
+                .replace("ú", "u")
+                .replace("ü", "u");
 
         // Determinar parte da universidade no email (nome ou sigla)
         String nomeUniversidade = universidade.getNome().toLowerCase()
@@ -209,7 +209,7 @@ public class RepresentanteService {
             parteUniversidade = nomeUniversidade;
         }
 
-        return nome + "." + sobrenome + "@adm." + parteUniversidade + ".unify.edu.com";
+        return primeiroNome + "." + ultimoSobrenome + "@adm." + parteUniversidade + ".unify.edu.com";
     }
 
     /**

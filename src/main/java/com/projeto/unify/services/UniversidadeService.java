@@ -12,6 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.projeto.unify.dtos.UniversidadeStatsDTO;
 
 import java.util.List;
 
@@ -26,6 +29,7 @@ public class UniversidadeService {
     private final RepresentanteService representanteService;
     private final UsuarioService usuarioService;
     private final FileService fileService;
+    private final FuncionarioRepository funcionarioRepository;
 
     @Transactional
     public Universidade criar(UniversidadeDTO dto, MultipartFile logoFile) {
@@ -296,5 +300,43 @@ public class UniversidadeService {
         logger.info("Removendo universidade do banco de dados: {}", universidade.getNome());
         universidadeRepository.delete(universidade);
         logger.info("Universidade {} excluída com sucesso", universidade.getNome());
+    }
+
+    @Transactional(readOnly = true)
+    public UniversidadeStatsDTO getStatsMinhaUniversidade() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String emailUsuarioLogado = authentication.getName();
+        Usuario usuarioLogado = usuarioService.findByEmail(emailUsuarioLogado);
+
+        Representante representante = representanteRepository.findByUsuarioId(usuarioLogado.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário não é um representante válido."));
+        
+        Universidade universidade = representante.getUniversidade();
+        if (universidade == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Representante não associado a nenhuma universidade.");
+        }
+
+        // Fetch the full university entity again to ensure all collections are available if needed
+        // and to work with the most up-to-date data.
+        Universidade universidadeCompleta = universidadeRepository.findById(universidade.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Universidade não encontrada."));
+
+        int campusCount = universidadeCompleta.getCampus() != null ? universidadeCompleta.getCampus().size() : 0;
+        long funcionariosCount = funcionarioRepository.countByUniversidadeId(universidadeCompleta.getId());
+        long alunosCount = 0; // Placeholder - Implement when Aluno entity and repository are available
+        // alunosCount = alunoRepository.countByUniversidadeId(universidadeCompleta.getId());
+
+        return new UniversidadeStatsDTO(
+            universidadeCompleta.getNome(),
+            universidadeCompleta.getId(),
+            campusCount,
+            funcionariosCount,
+            alunosCount
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public long countTotalUniversidades() {
+        return universidadeRepository.count();
     }
 }

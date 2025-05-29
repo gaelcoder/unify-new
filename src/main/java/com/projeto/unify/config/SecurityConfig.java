@@ -42,7 +42,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN_GERAL")
+                        .requestMatchers("/api/admin-geral/**").hasAuthority("ROLE_ADMIN_GERAL")
+                        .requestMatchers("/api/admin-universidade/**").hasAuthority("ROLE_ADMIN_UNIVERSIDADE")
+                        .requestMatchers("/api/representantes/**").hasAuthority("ROLE_ADMIN_GERAL")
+                        .requestMatchers("/api/universidades/**").hasAuthority("ROLE_ADMIN_GERAL")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

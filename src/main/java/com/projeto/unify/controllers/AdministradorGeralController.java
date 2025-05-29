@@ -19,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+import com.projeto.unify.dtos.AdminGeralStatsDTO;
+
 @RestController
 @RequestMapping("/api/admin/")
 @RequiredArgsConstructor
@@ -121,6 +123,12 @@ public class AdministradorGeralController {
         return ResponseEntity.ok(universidadeService.desassociarRepresentante(id));
     }
 
-
+    // Stats endpoint for Admin Geral
+    @GetMapping("/stats")
+    public ResponseEntity<AdminGeralStatsDTO> getAdminGeralStats() {
+        long totalUniversidades = universidadeService.countTotalUniversidades();
+        AdminGeralStatsDTO stats = new AdminGeralStatsDTO(totalUniversidades);
+        return ResponseEntity.ok(stats);
+    }
 
 }
