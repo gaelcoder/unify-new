@@ -33,6 +33,10 @@ public class Professor extends Pessoa {
     @JoinColumn(name = "universidade_id", nullable = false)
     private Universidade universidade;
 
+    @OneToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
     public Professor(String cpf, LocalDate dataNasc, String nome, String sobrenome, String setor, double salario, Universidade universidade, String titulacao, String email) {
         super(cpf, dataNasc, nome, sobrenome);
         this.salario = salario;

@@ -126,7 +126,7 @@ public class UniversidadeService {
                 });
     }
 
-    public Universidade atualizar(Long id, UniversidadeDTO dto) {
+    public Universidade atualizar(Long id, UniversidadeDTO dto, MultipartFile logoFile) {
         logger.info("Atualizando universidade com ID: {}", id);
         Universidade universidade = buscarPorId(id);
 
@@ -135,6 +135,23 @@ public class UniversidadeService {
         universidade.setFundacao(dto.getFundacao());
         universidade.setSigla(dto.getSigla());
         universidade.setCampus(dto.getCampus());
+
+        if (logoFile != null && !logoFile.isEmpty()) {
+            // Delete old logo if it exists
+            if (universidade.getLogoPath() != null && !universidade.getLogoPath().isEmpty()) {
+                try {
+                    fileService.delete(universidade.getLogoPath());
+                    logger.info("Logo antigo deletado: {}", universidade.getLogoPath());
+                } catch (Exception e) {
+                    logger.warn("Falha ao deletar logo antigo: {}. Error: {}", universidade.getLogoPath(), e.getMessage());
+                    // Continue even if old logo deletion fails for some reason
+                }
+            }
+            // Store new logo
+            String novoLogoPath = fileService.store(logoFile);
+            universidade.setLogoPath(novoLogoPath);
+            logger.info("Novo logo salvo em: {}", novoLogoPath);
+        }
 
         logger.info("Salvando universidade atualizada");
         return universidadeRepository.save(universidade);

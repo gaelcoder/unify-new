@@ -38,6 +38,10 @@ public class Aluno extends Pessoa {
     @JoinColumn(name = "graduacao_id")
     private Graduacao graduacao;
 
+    @OneToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
 
     public Aluno(String cpf, LocalDate dataNasc, String nome, String sobrenome, Graduacao graduacao, String email, String matricula, String curso, float cr) {
         super(cpf, dataNasc, nome, sobrenome);

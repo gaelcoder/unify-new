@@ -80,9 +80,11 @@ public class AdministradorGeralController {
     }
 
     // ENDPOINTS PUT
-    @PutMapping("/universidades/{id}")
-    public ResponseEntity<Universidade> atualizarUniversidade(@PathVariable Long id, @RequestBody UniversidadeDTO dto) {
-        return ResponseEntity.ok(universidadeService.atualizar(id, dto));
+    @PutMapping(value = "/universidades/{id}", consumes = { "multipart/form-data" })
+    public ResponseEntity<Universidade> atualizarUniversidade(@PathVariable Long id,
+                                                              @RequestPart("universidade") UniversidadeDTO dto,
+                                                              @RequestPart(value = "logo", required = false) MultipartFile logoFile) {
+        return ResponseEntity.ok(universidadeService.atualizar(id, dto, logoFile));
     }
 
     @PutMapping("/universidades/{universidadeId}/representante/{representanteId}")
