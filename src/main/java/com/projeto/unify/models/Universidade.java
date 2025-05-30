@@ -35,14 +35,16 @@ public class Universidade {
     private String logoPath;
 
     @ElementCollection
-    @CollectionTable(name = "campus_list", joinColumns = @JoinColumn(name = "id"))
-    @Column(name = "campus")
+    @CollectionTable(name = "universidade_campus",
+                     joinColumns = @JoinColumn(name = "universidade_id"))
+    @Column(name = "campus_nome")
     private List<String> campus = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
     private List<Aluno> alunos = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Funcionario> funcionarios = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)

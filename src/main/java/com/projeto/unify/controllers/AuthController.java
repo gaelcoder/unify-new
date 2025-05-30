@@ -7,7 +7,9 @@ import com.projeto.unify.models.Perfil;
 import com.projeto.unify.models.Representante;
 import com.projeto.unify.models.Universidade;
 import com.projeto.unify.models.Usuario;
+import com.projeto.unify.models.Funcionario;
 import com.projeto.unify.repositories.RepresentanteRepository;
+import com.projeto.unify.repositories.FuncionarioRepository;
 import com.projeto.unify.security.JwtService;
 import com.projeto.unify.services.AuthService;
 import com.projeto.unify.services.UsuarioService;
@@ -37,6 +39,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final AuthService authService;
     private final RepresentanteRepository representanteRepository;
+    private final FuncionarioRepository funcionarioRepository;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
@@ -65,6 +68,17 @@ public class AuthController {
             if (representanteOpt.isPresent()) {
                 Representante representante = representanteOpt.get();
                 Universidade universidade = representante.getUniversidade();
+                if (universidade != null) {
+                    authResponseBuilder.universidadeId(universidade.getId());
+                    authResponseBuilder.universidadeNome(universidade.getNome());
+                    authResponseBuilder.universidadeLogoPath(universidade.getLogoPath());
+                }
+            }
+        } else if (tipo.startsWith("ROLE_FUNCIONARIO")) {
+            Optional<Funcionario> funcionarioOpt = funcionarioRepository.findByUsuarioId(usuario.getId());
+            if (funcionarioOpt.isPresent()) {
+                Funcionario funcionario = funcionarioOpt.get();
+                Universidade universidade = funcionario.getUniversidade();
                 if (universidade != null) {
                     authResponseBuilder.universidadeId(universidade.getId());
                     authResponseBuilder.universidadeNome(universidade.getNome());

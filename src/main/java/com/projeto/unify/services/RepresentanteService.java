@@ -5,6 +5,9 @@ import com.projeto.unify.models.Perfil;
 import com.projeto.unify.models.Representante;
 import com.projeto.unify.models.Universidade;
 import com.projeto.unify.models.Usuario;
+import com.projeto.unify.repositories.FuncionarioRepository;
+import com.projeto.unify.repositories.AlunoRepository;
+import com.projeto.unify.repositories.ProfessorRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.projeto.unify.repositories.RepresentanteRepository;
 import com.projeto.unify.repositories.UsuarioRepository;
@@ -25,12 +28,67 @@ public class RepresentanteService {
 
     private final UsuarioService usuarioService;
     private final RepresentanteRepository representanteRepository;
+    private final FuncionarioRepository funcionarioRepository;
+    private final AlunoRepository alunoRepository;
+    private final ProfessorRepository professorRepository;
     private final EmailService emailService;
     private final UsuarioRepository usuarioRepository;
     private final PerfilService perfilService;
     private final PasswordEncoder passwordEncoder; // Adicionado o PasswordEncoder
 
     public Representante criar(RepresentanteDTO dto) {
+        // Ensure HttpStatus, ResponseStatusException are imported
+        if (dto.getCpf() != null && !dto.getCpf().isBlank()) {
+            if (funcionarioRepository.existsByCpf(dto.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um funcionário.");
+            }
+            if (representanteRepository.existsByCpf(dto.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um representante.");
+            }
+            if (alunoRepository.existsByCpf(dto.getCpf())) { // Added check
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um aluno.");
+            }
+            if (professorRepository.existsByCpf(dto.getCpf())) { // Added check
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um professor.");
+            }
+        }
+
+        // Email Validation
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            // Check across all user emails (institutional or personal login for other entities)
+            if (usuarioRepository.existsByEmail(dto.getEmail())) {
+                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um usuário no sistema.");
+            }
+            if (representanteRepository.existsByEmail(dto.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um representante.");
+            }
+            if (alunoRepository.existsByEmail(dto.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um aluno.");
+            }
+            if (funcionarioRepository.existsByEmail(dto.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um funcionário.");
+            }
+            if (professorRepository.existsByEmail(dto.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um professor.");
+            }
+        }
+
+        // Telefone Validation
+        if (dto.getTelefone() != null && !dto.getTelefone().isBlank()) {
+            if (representanteRepository.existsByTelefone(dto.getTelefone())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um representante.");
+            }
+            if (alunoRepository.existsByTelefone(dto.getTelefone())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um aluno.");
+            }
+            if (funcionarioRepository.existsByTelefone(dto.getTelefone())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um funcionário.");
+            }
+            if (professorRepository.existsByTelefone(dto.getTelefone())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um professor.");
+            }
+        }
+
         Representante representante = new Representante(
                 dto.getCpf(),
                 dto.getDataNascimento(),
@@ -46,11 +104,59 @@ public class RepresentanteService {
     public Representante atualizar(Long id, RepresentanteDTO dto) {
         Representante representante = buscarPorId(id);
 
+        // CPF Validation (if changed)
+        if (dto.getCpf() != null && !dto.getCpf().isBlank() && !dto.getCpf().equals(representante.getCpf())) {
+            if (funcionarioRepository.existsByCpf(dto.getCpf()) ||
+                alunoRepository.existsByCpf(dto.getCpf()) ||
+                professorRepository.existsByCpf(dto.getCpf()) ||
+                representanteRepository.findByCpf(dto.getCpf()).filter(r -> !r.getId().equals(id)).isPresent()) { // Check other reps
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado no sistema.");
+            }
+            representante.setCpf(dto.getCpf()); // Set CPF only if it passes validation and is different
+        }
+
+        // Email Validation (if changed)
+        if (dto.getEmail() != null && !dto.getEmail().isBlank() && !dto.getEmail().equals(representante.getEmail())) {
+            if (usuarioRepository.existsByEmail(dto.getEmail()) || // Check all user accounts
+                alunoRepository.existsByEmail(dto.getEmail()) ||
+                funcionarioRepository.existsByEmail(dto.getEmail()) ||
+                professorRepository.existsByEmail(dto.getEmail()) ||
+                representanteRepository.findByEmail(dto.getEmail()).filter(r -> !r.getId().equals(id)).isPresent()) { // Check other reps
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado no sistema.");
+            }
+            representante.setEmail(dto.getEmail());
+            // If this email is used for login, update Usuario entity as well
+            Usuario usuarioDoRepresentante = representante.getUsuario();
+            if (usuarioDoRepresentante != null && !usuarioDoRepresentante.getEmail().equals(dto.getEmail())){
+                // Note: If the representante's email for login is their *personal* email (from RepresentanteDTO)
+                // and NOT the generated institutional one, this logic needs to be certain.
+                // The gerarEmailInstitucional is separate. This implies Representante logs in with this dto.getEmail().
+                if(usuarioRepository.existsByEmail(dto.getEmail()) && !usuarioDoRepresentante.getEmail().equals(dto.getEmail())){
+                     // This check is a bit redundant if the above checks are comprehensive for dto.getEmail() across all users
+                     // but ensures the target email for the Usuario object isn't already taken by ANOTHER user.
+                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email de usuário já existe.");
+                }
+                usuarioDoRepresentante.setEmail(dto.getEmail());
+                usuarioRepository.save(usuarioDoRepresentante);
+            }
+        }
+
+        // Telefone Validation (if changed)
+        if (dto.getTelefone() != null && !dto.getTelefone().isBlank() && !dto.getTelefone().equals(representante.getTelefone())) {
+            if (alunoRepository.existsByTelefone(dto.getTelefone()) ||
+                funcionarioRepository.existsByTelefone(dto.getTelefone()) ||
+                professorRepository.existsByTelefone(dto.getTelefone()) ||
+                representanteRepository.findByTelefone(dto.getTelefone()).filter(r -> !r.getId().equals(id)).isPresent()) { // Check other reps
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado no sistema.");
+            }
+            representante.setTelefone(dto.getTelefone());
+        }
+
         representante.setNome(dto.getNome());
         representante.setSobrenome(dto.getSobrenome());
-        representante.setEmail(dto.getEmail());
-        representante.setTelefone(dto.getTelefone());
+        // Email and Telefone are set above after validation
         representante.setCargo(dto.getCargo());
+        // DataNascimento is not in DTO for update in current snippet, if it was, it would be here.
 
         return representanteRepository.save(representante);
     }

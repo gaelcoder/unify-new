@@ -12,9 +12,8 @@ public class FuncionarioDTO {
     private LocalDate dataNascimento;
     private String nome;
     private String sobrenome;
-    private String email; // Assuming email is needed for creation
+    private String email;
+    private String telefone;
     private String setor;
     private Double salario;
-    // universidadeId will not be in the DTO for creation via ADMIN_UNIVERSIDADE,
-    // as it will be automatically assigned.
 }

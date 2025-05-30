@@ -10,8 +10,10 @@ import java.util.Optional;
 public interface RepresentanteRepository extends JpaRepository<Representante, Long> {
     boolean existsByCpf(String cpf);
     boolean existsByEmail(String email);
+    boolean existsByTelefone(String telefone);
     Optional<Representante> findByEmail(String email);
     Optional<Representante> findByCpf(String cpf);
+    Optional<Representante> findByTelefone(String telefone);
     Optional<Representante> findByUsuario(Usuario usuario);
     Optional<Representante> findByUsuarioId(Long usuarioId);
 }

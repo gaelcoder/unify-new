@@ -31,7 +31,7 @@ public class AdministradorUniversidadeController {
     }
 
     // Funcionario Endpoints for Admin Universidade
-    @PostMapping("/funcionarios")
+    @PostMapping("/funcionarios/")
     public ResponseEntity<Funcionario> criarFuncionario(@Valid @RequestBody FuncionarioDTO funcionarioDTO) {
         Funcionario novoFuncionario = funcionarioService.criar(funcionarioDTO);
         return new ResponseEntity<>(novoFuncionario, HttpStatus.CREATED);
