@@ -1,6 +1,7 @@
 package com.projeto.unify.controllers;
 
-import com.projeto.unify.dtos.UniversidadeStatsDTO;
+import com.projeto.unify.dtos.ProfessorDTO;
+import com.projeto.unify.models.Professor;
 import com.projeto.unify.services.UniversidadeService;
 import com.projeto.unify.dtos.FuncionarioDTO;
 import com.projeto.unify.models.Funcionario;
@@ -11,25 +12,34 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.projeto.unify.services.ProfessorService;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin-universidade")
+@RequestMapping("/api/rh")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('ROLE_ADMIN_UNIVERSIDADE')")
-public class AdministradorUniversidadeController {
+@PreAuthorize("hasAuthority('ROLE_FUNCIONARIO_RH')")
+public class FuncionarioRHController {
 
     private final UniversidadeService universidadeService;
     private final FuncionarioService funcionarioService;
+    private final ProfessorService professorService;
 
-    @GetMapping("/minha-universidade/stats")
-    public ResponseEntity<UniversidadeStatsDTO> getMinhaUniversidadeStats() {
-        UniversidadeStatsDTO stats = universidadeService.getStatsMinhaUniversidade();
-        return ResponseEntity.ok(stats);
+    //
+    @PostMapping("/professores/")
+    public ResponseEntity<Professor> criarProfessor(@Valid @RequestBody ProfessorDTO professorDTO) {
+        Professor novoProfessor = professorService.criar(professorDTO);
+        return new ResponseEntity<>(novoProfessor, HttpStatus.CREATED);
     }
 
-    // Funcionario Endpoints for Admin Universidade
+    @GetMapping("/professores")
+    public ResponseEntity<List<Professor>> listarProfessoresDaUniversidade() {
+        List<Professor> professores = professorService.listarTodosPorUniversidadeDoUsuarioLogado();
+        return ResponseEntity.ok(professores);
+    }
+
+    // Funcionario Endpoints for RH Universidade
     @PostMapping("/funcionarios/")
     public ResponseEntity<Funcionario> criarFuncionario(@Valid @RequestBody FuncionarioDTO funcionarioDTO) {
         Funcionario novoFuncionario = funcionarioService.criar(funcionarioDTO);

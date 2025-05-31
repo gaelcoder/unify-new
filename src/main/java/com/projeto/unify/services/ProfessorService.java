@@ -1,11 +1,8 @@
-/* package com.projeto.unify.services;
+package com.projeto.unify.services;
 
-import com.projeto.unify.dtos.ProfessorDTO; // Assuming ProfessorDTO exists or will be created
-import com.projeto.unify.models.Professor;
-import com.projeto.unify.models.Usuario;
-import com.projeto.unify.models.Universidade;
-import com.projeto.unify.models.Representante;
-import com.projeto.unify.models.Perfil;
+import com.projeto.unify.dtos.FuncionarioDTO;
+import com.projeto.unify.dtos.ProfessorDTO;
+import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.AlunoRepository;
 import com.projeto.unify.repositories.FuncionarioRepository;
 import com.projeto.unify.repositories.ProfessorRepository;
@@ -20,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -28,206 +26,228 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProfessorService {
 
-    private final ProfessorRepository professorRepository;
-    private final AlunoRepository alunoRepository;
+    private static final String TITULO_DR = "Dr. / Dr.a";
+    private static final String TITULO_MESTRE = "M.e / M.ª";
+    private static final String TITULO_ESPECIALISTA = "Especialista";
+    private static final List<String> TITULACOES_VALIDAS = Arrays.asList(TITULO_DR, TITULO_ESPECIALISTA, TITULO_MESTRE);
+
+
     private final FuncionarioRepository funcionarioRepository;
     private final RepresentanteRepository representanteRepository;
+    private final AlunoRepository alunoRepository;
+    private final ProfessorRepository professorRepository;
+    private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
-    private final UsuarioService usuarioService; // For finding logged-in user
-    private final PasswordEncoder passwordEncoder; // For setting initial password
-    private final PerfilService perfilService; // For assigning roles
-    private final EmailService emailService; // For sending credentials
+    private final PasswordEncoder passwordEncoder;
+    private final PerfilService perfilService;
+    private final EmailService emailService;
 
     @Transactional
-    public Professor criar(ProfessorDTO dto) { 
+    public Professor criar(ProfessorDTO dto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioLogado = authentication.getName();
-        Usuario adminUser = usuarioService.findByEmail(emailUsuarioLogado);
-        Representante adminUniversidade = representanteRepository.findByUsuarioId(adminUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário logado não é um representante de universidade válido."));
-        Universidade universidadeDoAdmin = adminUniversidade.getUniversidade();
-        if (universidadeDoAdmin == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Representante não está associado a nenhuma universidade.");
+
+        Usuario rhUser = usuarioService.findByEmail(emailUsuarioLogado);
+
+        Funcionario rhUniversidade = funcionarioRepository.findByUsuarioId(rhUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Usuário logado não é do setor de RH."));
+
+        Universidade universidadeDoRH = rhUniversidade.getUniversidade();
+        if (universidadeDoRH == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Funcionário do RH não está associado a nenhuma universidade.");
         }
 
-        // CPF Validation
-        if (dto.getCpf() != null && !dto.getCpf().isBlank()) {
-            if (professorRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um professor.");
-            }
-            if (alunoRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um aluno.");
-            }
-            if (funcionarioRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um funcionário.");
-            }
-            if (representanteRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um representante.");
-            }
+        if (dto.getTitulacao() == null || dto.getTitulacao().isBlank() || !TITULACOES_VALIDAS.contains(dto.getTitulacao())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Titulação é obrigatória.");
         }
 
-        // Email (Personal/Login) Validation
-        // Assuming dto.getEmail() is the primary email for the professor, potentially for login
-        String emailProfessor = dto.getEmail(); 
-        if (emailProfessor != null && !emailProfessor.isBlank()) {
-            if (usuarioRepository.existsByEmail(emailProfessor)) {
-                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um usuário no sistema.");
-            }
-            if (professorRepository.existsByEmail(emailProfessor)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para outro professor.");
-            }
-            if (alunoRepository.existsByEmail(emailProfessor)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um aluno.");
-            }
-            if (funcionarioRepository.existsByEmail(emailProfessor)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um funcionário.");
-            }
-            if (representanteRepository.existsByEmail(emailProfessor)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado para um representante.");
+        String emailInstitucional = gerarEmailInstitucionalProfessor(dto, universidadeDoRH, dto.getTitulacao());
+
+        if (usuarioRepository.existsByEmail(emailInstitucional)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email institucional gerado já cadastrado no sistema.");
+        }
+
+        if (dto.getEmail() != null && !dto.getEmail().isBlank() && !dto.getEmail().equals(emailInstitucional) && usuarioRepository.existsByEmail(dto.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email informado já cadastrado no sistema.");
+        }
+
+        // Validacao cruzada de Email Pessoal
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            if (alunoRepository.existsByEmail(dto.getEmail()) ||
+                    professorRepository.existsByEmail(dto.getEmail()) ||
+                    representanteRepository.existsByEmail(dto.getEmail())
+            ) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email pessoal já cadastrado para um aluno.");
             }
         }
 
-        // Telefone Validation
         if (dto.getTelefone() != null && !dto.getTelefone().isBlank()) {
-            if (professorRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um professor.");
-            }
-            if (alunoRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um aluno.");
-            }
-            if (funcionarioRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um funcionário.");
-            }
-            if (representanteRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um representante.");
+            if (funcionarioRepository.existsByTelefone(dto.getTelefone()) ||
+                    alunoRepository.existsByTelefone(dto.getTelefone()) ||
+                    professorRepository.existsByTelefone(dto.getTelefone()) ||
+                    representanteRepository.existsByTelefone(dto.getTelefone())
+            ) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado no sistema.");
             }
         }
-        
-        // Criar Usuario para o Professor
-        Usuario novoUsuarioProfessor = new Usuario();
-        // TODO: Definir a lógica de email institucional para professor, se aplicável.
-        // Por agora, usando o email pessoal do DTO como email do Usuario.
-        novoUsuarioProfessor.setEmail(emailProfessor); 
+
+        if (dto.getCpf() != null) {
+            if (funcionarioRepository.existsByCpf(dto.getCpf()) ||
+                    representanteRepository.existsByCpf(dto.getCpf()) ||
+                    alunoRepository.existsByCpf(dto.getCpf()) ||
+                    professorRepository.existsByCpf(dto.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado no sistema.");
+            }
+        }
+
+        Usuario novoUsuarioProfessor= new Usuario();
+        novoUsuarioProfessor.setEmail(emailInstitucional);
         novoUsuarioProfessor.setNome(dto.getNome() + " " + dto.getSobrenome());
         novoUsuarioProfessor.setPrimeiroAcesso(true);
+
         String senhaTemporaria = gerarSenhaAleatoria();
         novoUsuarioProfessor.setSenha(passwordEncoder.encode(senhaTemporaria));
-        Perfil perfilProfessor = perfilService.obterOuCriarPerfil(Perfil.TipoPerfil.ROLE_PROFESSOR);
+
+        Perfil perfilProfessor;
+        perfilProfessor = perfilService.obterOuCriarPerfil(Perfil.TipoPerfil.ROLE_PROFESSOR);
+        
         novoUsuarioProfessor.setPerfis(Set.of(perfilProfessor));
+
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuarioProfessor);
 
         Professor professor = new Professor();
         professor.setCpf(dto.getCpf());
+        professor.setDataNascimento(dto.getDataNascimento());
         professor.setNome(dto.getNome());
         professor.setSobrenome(dto.getSobrenome());
-        professor.setDataNascimento(dto.getDataNascimento());
-        professor.setEmail(emailProfessor); 
+        professor.setEmail(dto.getEmail());
         professor.setTelefone(dto.getTelefone());
-        professor.setSalario(dto.getSalario());
         professor.setTitulacao(dto.getTitulacao());
-        professor.setUniversidade(universidadeDoAdmin); 
+        professor.setSalario(dto.getSalario());
+        professor.setUniversidade(universidadeDoRH);
         professor.setUsuario(usuarioSalvo);
-        
+
         Professor professorSalvo = professorRepository.save(professor);
 
         try {
-            if (emailService != null && emailProfessor != null && !emailProfessor.isBlank()) {
-                emailService.enviarCredenciaisAcesso(emailProfessor, emailProfessor, senhaTemporaria, professor.getNomeCompleto());
+            String emailDestinatario = (dto.getEmail() != null && !dto.getEmail().isBlank()) ? dto.getEmail() : emailInstitucional;
+            if (emailService != null) {
+                String nomeDestinatario = professor.getNomeCompleto();
+                emailService.enviarCredenciaisAcesso(emailDestinatario, emailInstitucional, senhaTemporaria, nomeDestinatario);
             }
         } catch (Exception e) {
-            System.err.println("Falha ao enviar email de primeiro acesso para " + emailProfessor + ": " + e.getMessage());
+            System.err.println("Falha ao enviar email de primeiro acesso para " + usuarioSalvo.getEmail() + ": " + e.getMessage());
         }
 
         return professorSalvo;
     }
 
-    @Transactional
-    public Professor atualizar(Long id, ProfessorDTO dto) {
-        Professor professorExistente = professorRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado com ID: " + id));
-        
-        // TODO: Adicionar verificação de permissão (ex: se o usuário logado pode alterar este professor)
-
-        // CPF Validation (if changed)
-        if (dto.getCpf() != null && !dto.getCpf().isBlank() && !dto.getCpf().equals(professorExistente.getCpf())) {
-            if (professorRepository.existsByCpf(dto.getCpf()) || // Check other professors
-                alunoRepository.existsByCpf(dto.getCpf()) ||
-                funcionarioRepository.existsByCpf(dto.getCpf()) ||
-                representanteRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado no sistema.");
-            }
-            professorExistente.setCpf(dto.getCpf());
-        }
-
-        // Email Validation (if changed)
-        String novoEmail = dto.getEmail();
-        if (novoEmail != null && !novoEmail.isBlank() && !novoEmail.equals(professorExistente.getEmail())) {
-            // Check across all user emails and other entities' emails
-            if (usuarioRepository.existsByEmail(novoEmail) ||
-                alunoRepository.existsByEmail(novoEmail) ||
-                funcionarioRepository.existsByEmail(novoEmail) ||
-                representanteRepository.existsByEmail(novoEmail) ||
-                professorRepository.findByEmail(novoEmail).filter(p -> !p.getId().equals(id)).isPresent()) { // Check other professors
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado no sistema.");
-            }
-            professorExistente.setEmail(novoEmail);
-            // Update Usuario email as well
-            Usuario usuarioDoProfessor = professorExistente.getUsuario();
-            if (usuarioDoProfessor != null) {
-                usuarioDoProfessor.setEmail(novoEmail);
-                usuarioRepository.save(usuarioDoProfessor);
-            }
-        }
-
-        // Telefone Validation (if changed)
-        if (dto.getTelefone() != null && !dto.getTelefone().isBlank() && !dto.getTelefone().equals(professorExistente.getTelefone())) {
-            if (alunoRepository.existsByTelefone(dto.getTelefone()) ||
-                funcionarioRepository.existsByTelefone(dto.getTelefone()) ||
-                representanteRepository.existsByTelefone(dto.getTelefone()) ||
-                professorRepository.findByTelefone(dto.getTelefone()).filter(p -> !p.getId().equals(id)).isPresent()) { // Check other professors
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado no sistema.");
-            }
-            professorExistente.setTelefone(dto.getTelefone());
-        }
-
-        if (dto.getNome() != null) professorExistente.setNome(dto.getNome());
-        if (dto.getSobrenome() != null) professorExistente.setSobrenome(dto.getSobrenome());
-        if (dto.getDataNascimento() != null) professorExistente.setDataNascimento(dto.getDataNascimento());
-        if (dto.getSalario() != null) professorExistente.setSalario(dto.getSalario()); // Assuming ProfessorDTO has getSalario
-        if (dto.getTitulacao() != null) professorExistente.setTitulacao(dto.getTitulacao()); // Assuming ProfessorDTO has getTitulacao
-        // Universidade and Usuario are not typically changed this way.
-
-        return professorRepository.save(professorExistente);
-    }
-    
-    @Transactional(readOnly = true)
     public List<Professor> listarTodos() {
-        // TODO: Add security/permission checks if needed, e.g., list only for user's university
         return professorRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
-    public Professor buscarPorId(Long id) {
-        // TODO: Add security/permission checks
-        return professorRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado com ID: " + id));
-    }
+    private String gerarEmailInstitucionalProfessor(ProfessorDTO dto, Universidade universidade, String setor) {
+        String primeiroNome = dto.getNome().toLowerCase()
+                .split(" ")[0]
+                .replace("ç", "c")
+                .replace("á", "a")
+                .replace("à", "a")
+                .replace("ã", "a")
+                .replace("â", "a")
+                .replace("é", "e")
+                .replace("ê", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ô", "o")
+                .replace("õ", "o")
+                .replace("ú", "u")
+                .replace("ü", "u");
 
-    @Transactional
-    public void deletar(Long id) {
-        // TODO: Add security/permission checks
-        Professor professor = buscarPorId(id);
-        Usuario usuarioAssociado = professor.getUsuario();
-        professorRepository.delete(professor);
-        if (usuarioAssociado != null) {
-            // Consider if user should be deleted or just unlinked/deactivated
-            usuarioRepository.delete(usuarioAssociado);
+        String ultimoSobrenome = dto.getSobrenome().toLowerCase();
+        if (ultimoSobrenome.contains(" ")) {
+            String[] partes = ultimoSobrenome.split(" ");
+            ultimoSobrenome = partes[partes.length - 1];
         }
+        ultimoSobrenome = ultimoSobrenome
+                .replace("ç", "c")
+                .replace("á", "a")
+                .replace("à", "a")
+                .replace("ã", "a")
+                .replace("â", "a")
+                .replace("é", "e")
+                .replace("ê", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ô", "o")
+                .replace("õ", "o")
+                .replace("ú", "u")
+                .replace("ü", "u");
+
+        String nomeUniversidade = universidade.getNome().toLowerCase()
+                .replace(" ", "")
+                .replace("universidade", "")
+                .replace("faculdade", "")
+                .replace("instituto", "")
+                .replace("ç", "c")
+                .replace("á", "a")
+                .replace("à", "a")
+                .replace("ã", "a")
+                .replace("â", "a")
+                .replace("é", "e")
+                .replace("ê", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ô", "o")
+                .replace("õ", "o")
+                .replace("ú", "u")
+                .replace("ü", "u");
+
+        String parteUniversidade;
+        if (nomeUniversidade.length() > 10 && universidade.getSigla() != null && !universidade.getSigla().isEmpty()) {
+            parteUniversidade = universidade.getSigla().toLowerCase();
+        } else {
+            parteUniversidade = nomeUniversidade;
+        }
+
+        String infixEmail = "prof";
+        return primeiroNome + "." + ultimoSobrenome + "@" + infixEmail + "." + parteUniversidade + ".unify.edu.com";
     }
 
     private String gerarSenhaAleatoria() {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    // Add other methods like buscarPorId, listarTodos, atualizar, deletar as needed
-}*/
+    private Universidade getUniversidadeDoUsuarioLogado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String emailUsuarioLogado = authentication.getName();
+        Usuario usuarioLogado = usuarioService.findByEmail(emailUsuarioLogado);
+
+        Professor professor = professorRepository.findByUsuarioId(usuarioLogado.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Usuário não é um usuário de RH válido para acessar esta funcionalidade."));
+
+        Universidade universidade = professor.getUniversidade();
+        if (universidade == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Professor não está associado a nenhuma universidade.");
+        }
+        return universidade;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Professor> listarTodosPorUniversidadeDoUsuarioLogado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isRHUniversidade = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO_RH"));
+
+        if (isRHUniversidade) {
+          return funcionarioRepository.findAll();
+        }
+
+        Universidade universidade = getUniversidadeDoUsuarioLogado();
+        return funcionarioRepository.findByUniversidadeId(universidade.getId());
+    }
+
+}

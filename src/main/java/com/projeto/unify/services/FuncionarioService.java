@@ -45,75 +45,48 @@ public class FuncionarioService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioLogado = authentication.getName();
 
-        Usuario adminUser = usuarioService.findByEmail(emailUsuarioLogado);
-
-        Representante adminUniversidade = representanteRepository.findByUsuarioId(adminUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Usuário logado não é um representante de universidade válido."));
-
-        Universidade universidadeDoAdmin = adminUniversidade.getUniversidade();
-        if (universidadeDoAdmin == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Representante não está associado a nenhuma universidade.");
-        }
+        Universidade universidadeDoAdminOuRH = getUniversidadeDoUsuarioLogado();
 
         if (dto.getSetor() == null || dto.getSetor().isBlank() || !SETORES_VALIDOS.contains(dto.getSetor())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Setor do funcionário é obrigatório e deve ser 'RH' ou 'Secretaria'.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Setor do funcionário é obrigatório.");
         }
 
-        String emailInstitucional = gerarEmailInstitucionalFuncionario(dto, universidadeDoAdmin, dto.getSetor());
+        String emailInstitucional = gerarEmailInstitucionalFuncionario(dto, universidadeDoAdminOuRH, dto.getSetor());
 
         if (usuarioRepository.existsByEmail(emailInstitucional)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email institucional gerado já cadastrado no sistema.");
         }
         
         if (dto.getEmail() != null && !dto.getEmail().isBlank() && !dto.getEmail().equals(emailInstitucional) && usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email pessoal informado já cadastrado no sistema para um usuário.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email informado já cadastrado no sistema.");
         }
 
         // Validacao cruzada de Email Pessoal
         if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
-            if (alunoRepository.existsByEmail(dto.getEmail())) {
+            if (alunoRepository.existsByEmail(dto.getEmail()) ||
+                    professorRepository.existsByEmail(dto.getEmail()) ||
+                    representanteRepository.existsByEmail(dto.getEmail())
+            ) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email pessoal já cadastrado para um aluno.");
             }
-            if (professorRepository.existsByEmail(dto.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email pessoal já cadastrado para um professor.");
-            }
-            if (representanteRepository.existsByEmail(dto.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email pessoal já cadastrado para um representante.");
-            }
-            // Nao precisa checar funcionarioRepository.existsByEmail pois ja e' coberto pelo @Column(unique=true)
-            // e pela verificacao de usuarioRepository.existsByEmail acima, assumindo que o email pessoal pode ser o mesmo do usuario.
         }
 
-        // Validacao cruzada de Telefone
         if (dto.getTelefone() != null && !dto.getTelefone().isBlank()) {
-            if (funcionarioRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um funcionário.");
-            }
-            if (alunoRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um aluno.");
-            }
-            if (professorRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um professor.");
-            }
-            if (representanteRepository.existsByTelefone(dto.getTelefone())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado para um representante.");
+            if (funcionarioRepository.existsByTelefone(dto.getTelefone()) ||
+                    alunoRepository.existsByTelefone(dto.getTelefone()) ||
+                    professorRepository.existsByTelefone(dto.getTelefone()) ||
+                    representanteRepository.existsByTelefone(dto.getTelefone())
+            ) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado no sistema.");
             }
         }
 
         if (dto.getCpf() != null) {
-            if (funcionarioRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um funcionário.");
-            }
-            if (representanteRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um representante.");
-            }
-            if (alunoRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um aluno.");
-            }
-            if (professorRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado para um professor.");
+            if (funcionarioRepository.existsByCpf(dto.getCpf()) ||
+                    representanteRepository.existsByCpf(dto.getCpf()) ||
+                    alunoRepository.existsByCpf(dto.getCpf()) ||
+                    professorRepository.existsByCpf(dto.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado no sistema.");
             }
         }
 
@@ -144,7 +117,7 @@ public class FuncionarioService {
         funcionario.setTelefone(dto.getTelefone());
         funcionario.setSetor(dto.getSetor());
         funcionario.setSalario(dto.getSalario());
-        funcionario.setUniversidade(universidadeDoAdmin);
+        funcionario.setUniversidade(universidadeDoAdminOuRH);
         funcionario.setUsuario(usuarioSalvo);
 
         Funcionario funcionarioSalvo = funcionarioRepository.save(funcionario);
@@ -247,24 +220,45 @@ public class FuncionarioService {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    // Helper method to get the university of the logged-in user (assuming Admin Universidade)
+    // Helper method to get the university of the logged-in user (Admin Universidade or Funcionario RH)
     private Universidade getUniversidadeDoUsuarioLogado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioLogado = authentication.getName();
         Usuario usuarioLogado = usuarioService.findByEmail(emailUsuarioLogado);
 
-        // Assuming an Admin Universidade is always linked via Representante
-        // Adjust if other user types can manage funcionarios directly
-        Representante representante = representanteRepository.findByUsuarioId(usuarioLogado.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, 
-                                "Usuário não é um representante válido para acessar esta funcionalidade."));
-        
-        Universidade universidade = representante.getUniversidade();
-        if (universidade == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                                "Representante não está associado a nenhuma universidade.");
+        // Check if user is ADMIN_UNIVERSIDADE (Representante)
+        boolean isAdminUniversidade = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(Perfil.TipoPerfil.ROLE_ADMIN_UNIVERSIDADE.toString()));
+
+        if (isAdminUniversidade) {
+            Representante representante = representanteRepository.findByUsuarioId(usuarioLogado.getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            "Usuário administrador de universidade não encontrado ou não associado."));
+            if (representante.getUniversidade() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Representante não está associado a nenhuma universidade.");
+            }
+            return representante.getUniversidade();
         }
-        return universidade;
+
+        // Check if user is FUNCIONARIO_RH
+        boolean isFuncionarioRh = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(Perfil.TipoPerfil.ROLE_FUNCIONARIO_RH.toString()));
+
+        if (isFuncionarioRh) {
+            Funcionario funcionarioRh = funcionarioRepository.findByUsuarioId(usuarioLogado.getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            "Funcionário de RH não encontrado ou não associado."));
+            if (funcionarioRh.getUniversidade() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Funcionário de RH não está associado a nenhuma universidade.");
+            }
+            return funcionarioRh.getUniversidade();
+        }
+
+        // If not ADMIN_UNIVERSIDADE or FUNCIONARIO_RH, then they are not authorized for these operations
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Usuário não tem permissão (ADMIN_UNIVERSIDADE ou FUNCIONARIO_RH) para realizar esta operação ou não está associado a uma universidade.");
     }
 
     @Transactional(readOnly = true)
@@ -290,15 +284,16 @@ public class FuncionarioService {
     public Funcionario buscarPorIdEUniversidadeDoUsuarioLogado(Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdminGeral = authentication.getAuthorities().stream()
-                                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN_GERAL"));
+                                    .anyMatch(a -> a.getAuthority().equals(Perfil.TipoPerfil.ROLE_ADMIN_GERAL.toString()));
 
         Funcionario funcionario = funcionarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado com ID: " + id));
 
         if (!isAdminGeral) {
-            Universidade universidadeDoUsuario = getUniversidadeDoUsuarioLogado();
-            if (!funcionario.getUniversidade().getId().equals(universidadeDoUsuario.getId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Funcionário não pertence à universidade do usuário logado.");
+            // This will now correctly use the updated getUniversidadeDoUsuarioLogado which checks for Admin_Uni or Func_RH
+            Universidade universidadeDoUsuario = getUniversidadeDoUsuarioLogado(); 
+            if (funcionario.getUniversidade() == null || !funcionario.getUniversidade().getId().equals(universidadeDoUsuario.getId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Funcionário não pertence à universidade do usuário logado ou não está associado a uma universidade.");
             }
         }
         return funcionario;
@@ -383,13 +378,29 @@ public class FuncionarioService {
         Funcionario funcionarioParaDeletar = buscarPorIdEUniversidadeDoUsuarioLogado(id); // Ensures user has access
         Usuario usuarioAssociado = funcionarioParaDeletar.getUsuario();
 
+        if (usuarioAssociado != null) {
+            usuarioAssociado.setAtivo(false);
+            // Optionally, remove specific profiles or all profiles if the user should not have any roles after this.
+            // Example: Clear all profiles
+            // usuarioAssociado.getPerfis().clear(); 
+            // Example: Remove specific funcionario profiles
+            // Perfil.TipoPerfil rhProfile = Perfil.TipoPerfil.ROLE_FUNCIONARIO_RH;
+            // Perfil.TipoPerfil funcProfile = Perfil.TipoPerfil.ROLE_FUNCIONARIO;
+            // usuarioAssociado.getPerfis().removeIf(perfil -> perfil.getNome() == rhProfile || perfil.getNome() == funcProfile);
+            usuarioRepository.save(usuarioAssociado);
+        }
+        
+        // Clear the association on the Funcionario side before deleting
+        funcionarioParaDeletar.setUsuario(null);
+        // funcionarioRepository.save(funcionarioParaDeletar); // Save change if not deleting immediately
+
         funcionarioRepository.delete(funcionarioParaDeletar);
 
-        if (usuarioAssociado != null) {
-            // Decide strategy: soft delete user, hard delete, or disassociate profiles.
-            // For now, simple deletion of the user too. This might need to be more nuanced.
-            usuarioRepository.delete(usuarioAssociado);
-        }
+        // If usuarioAssociado was not deleted, it's now deactivated.
+        // Original hard delete of usuarioAssociado is removed.
+        // if (usuarioAssociado != null) {
+            // usuarioRepository.delete(usuarioAssociado);
+        // }
     }
 
 }

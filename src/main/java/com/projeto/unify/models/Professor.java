@@ -1,5 +1,6 @@
 package com.projeto.unify.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.projeto.unify.models.base.Pessoa;
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,8 +38,9 @@ public class Professor extends Pessoa {
     @OneToMany(mappedBy = "professor", fetch = FetchType.LAZY)
     private Set<Turma> turmas = new HashSet<>();
 
-    @ManyToOne
-    @JoinColumn(name = "universidade_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "universidade_id")
+    @JsonBackReference
     private Universidade universidade;
 
     @OneToOne

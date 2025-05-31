@@ -182,10 +182,18 @@ public class RepresentanteService {
 
         // Se estiver associado a uma universidade, desassociar primeiro
         if (representante.getUniversidade() != null) {
+            // It's important that the University entity is also saved if its state changes.
+            // Assuming the ORM handles this or it's done in another part of the transaction.
             representante.getUniversidade().setRepresentante(null);
-            representante.setUniversidade(null);
+            // representante.setUniversidade(null); // This is done by desassociarRepresentante
+
         }
 
+        // Deactivate and disassociate the user
+        desassociarRepresentante(representante);
+
+
+        // Finally, delete the representante record
         representanteRepository.delete(representante);
     }
 
@@ -332,10 +340,17 @@ public class RepresentanteService {
         Usuario usuario = representante.getUsuario();
         if (usuario != null) {
             usuario.setAtivo(false);
+            // Optionally, remove specific profiles related to this role
+            // Example: usuario.getPerfis().removeIf(perfil -> perfil.getNome() == Perfil.TipoPerfil.ROLE_ADMIN_UNIVERSIDADE);
             usuarioRepository.save(usuario);
         }
 
         // Desvincular da universidade
+        if (representante.getUniversidade() != null) {
+            representante.getUniversidade().setRepresentante(null); // Ensure bi-directional relationship is cleared
+            // Consider saving the universidade entity if changes to it need to be persisted immediately
+            // e.g., universidadeRepository.save(representante.getUniversidade());
+        }
         representante.setUniversidade(null);
         representante.setUsuario(null); // Também limpar a referência ao usuário
 
