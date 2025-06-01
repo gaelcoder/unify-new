@@ -243,11 +243,11 @@ public class ProfessorService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO_RH"));
 
         if (isRHUniversidade) {
-          return funcionarioRepository.findAll();
+          return professorRepository.findAll();
         }
 
         Universidade universidade = getUniversidadeDoUsuarioLogado();
-        return funcionarioRepository.findByUniversidadeId(universidade.getId());
+        return professorRepository.findByUniversidadeId(universidade.getId());
     }
 
 }

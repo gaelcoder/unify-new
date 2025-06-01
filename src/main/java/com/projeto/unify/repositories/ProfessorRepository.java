@@ -4,6 +4,8 @@ import com.projeto.unify.models.Professor;
 import com.projeto.unify.models.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -16,4 +18,5 @@ public interface ProfessorRepository extends JpaRepository<Professor, Long> {
     Optional<Professor> findByTelefone(String telefone);
     Optional<Professor> findByUsuario(Usuario usuario);
     Optional<Professor> findByUsuarioId(Long usuarioId);
+    List<Professor> findByUniversidadeId(Long universidadeId);
 }
