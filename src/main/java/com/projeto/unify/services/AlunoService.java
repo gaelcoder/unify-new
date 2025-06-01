@@ -1,4 +1,4 @@
-/* package com.projeto.unify.services;
+package com.projeto.unify.services;
 
 import com.projeto.unify.dtos.AlunoDTO; // Assuming AlunoDTO exists or will be created
 import com.projeto.unify.models.*;
@@ -152,100 +152,7 @@ public class AlunoService {
         return alunoSalvo;
     }
 
-    @Transactional
-    public Aluno atualizar(Long id, AlunoDTO dto) {
-        Aluno alunoExistente = alunoRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado com ID: " + id));
-        
-        // TODO: Adicionar verificacao de permissao
-
-        if (dto.getCpf() != null && !dto.getCpf().isBlank() && !dto.getCpf().equals(alunoExistente.getCpf())) {
-            if (alunoRepository.existsByCpf(dto.getCpf()) || 
-                funcionarioRepository.existsByCpf(dto.getCpf()) ||
-                professorRepository.existsByCpf(dto.getCpf()) ||
-                representanteRepository.existsByCpf(dto.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado no sistema.");
-            }
-            alunoExistente.setCpf(dto.getCpf());
-        }
-
-        String novoEmail = dto.getEmail();
-        if (novoEmail != null && !novoEmail.isBlank() && !novoEmail.equals(alunoExistente.getEmail())) {
-            if (usuarioRepository.existsByEmail(novoEmail) ||
-                funcionarioRepository.existsByEmail(novoEmail) ||
-                professorRepository.existsByEmail(novoEmail) ||
-                representanteRepository.existsByEmail(novoEmail) ||
-                alunoRepository.findByEmail(novoEmail).filter(a -> !a.getId().equals(id)).isPresent()) { 
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado no sistema.");
-            }
-            alunoExistente.setEmail(novoEmail);
-            Usuario usuarioDoAluno = alunoExistente.getUsuario();
-            if (usuarioDoAluno != null) {
-                usuarioDoAluno.setEmail(novoEmail);
-                usuarioRepository.save(usuarioDoAluno);
-            }
-        }
-
-        if (dto.getTelefone() != null && !dto.getTelefone().isBlank() && !dto.getTelefone().equals(alunoExistente.getTelefone())) {
-            if (funcionarioRepository.existsByTelefone(dto.getTelefone()) ||
-                professorRepository.existsByTelefone(dto.getTelefone()) ||
-                representanteRepository.existsByTelefone(dto.getTelefone()) ||
-                alunoRepository.findByTelefone(dto.getTelefone()).filter(a -> !a.getId().equals(id)).isPresent()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado no sistema.");
-            }
-            alunoExistente.setTelefone(dto.getTelefone());
-        }
-
-        if (dto.getNome() != null) alunoExistente.setNome(dto.getNome());
-        if (dto.getSobrenome() != null) alunoExistente.setSobrenome(dto.getSobrenome());
-        if (dto.getDataNascimento() != null) alunoExistente.setDataNascimento(dto.getDataNascimento());
-        if (dto.getMatricula() != null) alunoExistente.setMatricula(dto.getMatricula());
-        if (dto.getCurso() != null) alunoExistente.setCurso(dto.getCurso());
-        if (dto.getCr() != null) alunoExistente.setCr(dto.getCr());
-        
-        if (dto.getUniversidadeId() != null && (alunoExistente.getUniversidade() == null || !dto.getUniversidadeId().equals(alunoExistente.getUniversidade().getId()))) {
-            Universidade u = universidadeRepository.findById(dto.getUniversidadeId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Universidade para atualização não encontrada."));
-            alunoExistente.setUniversidade(u);
-        }
-        if (dto.getTurmaId() != null && (alunoExistente.getTurma() == null || !dto.getTurmaId().equals(alunoExistente.getTurma().getId()))){
-            Turma t = turmaRepository.findById(dto.getTurmaId()).orElse(null); // Permite desvincular se ID for null ou turma nao encontrada
-            alunoExistente.setTurma(t);
-        } else if (dto.getTurmaId() == null && alunoExistente.getTurma() != null) { // Explícitamente desvincular turma
-            alunoExistente.setTurma(null);
-        }
-
-        if (dto.getGraduacaoId() != null && (alunoExistente.getGraduacao() == null || !dto.getGraduacaoId().equals(alunoExistente.getGraduacao().getId()))){
-            Graduacao g = graduacaoRepository.findById(dto.getGraduacaoId()).orElse(null);
-            alunoExistente.setGraduacao(g);
-        } else if (dto.getGraduacaoId() == null && alunoExistente.getGraduacao() != null) { // Explícitamente desvincular graduacao
-            alunoExistente.setGraduacao(null);
-        }
-
-        return alunoRepository.save(alunoExistente);
-    }
-    
-    @Transactional(readOnly = true)
-    public List<Aluno> listarTodos() {
-        return alunoRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public Aluno buscarPorId(Long id) {
-        return alunoRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado com ID: " + id));
-    }
-
-    @Transactional
-    public void deletar(Long id) {
-        Aluno aluno = buscarPorId(id);
-        Usuario usuarioAssociado = aluno.getUsuario();
-        alunoRepository.delete(aluno);
-        if (usuarioAssociado != null) {
-            usuarioRepository.delete(usuarioAssociado);
-        }
-    }
-
     private String gerarSenhaAleatoria() {
         return UUID.randomUUID().toString().substring(0, 8);
     }
-} */
+}
