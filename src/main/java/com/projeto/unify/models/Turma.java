@@ -44,6 +44,9 @@ public class Turma {
     @OneToMany(mappedBy = "turma", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Aluno> alunos = new ArrayList<>();
 
+    @OneToMany(mappedBy = "turma", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Avaliacao> avaliacoesDefinidas = new ArrayList<>();
+
     public Turma(Materia materia, String turno, int limiteAlunos) {
         this.materia = Objects.requireNonNull(materia, "Matéria não pode ser nula");
         this.turno = Objects.requireNonNull(turno, "Turno não pode ser nulo");

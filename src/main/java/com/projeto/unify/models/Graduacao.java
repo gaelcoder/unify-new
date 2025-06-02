@@ -43,7 +43,6 @@ public class Graduacao {
     @OneToMany(mappedBy = "graduacao")
     private List<Aluno> alunos = new ArrayList<>();
 
-
     private String campusDisponivel;
 
     public Graduacao(String titulo, int semestres, String codigoCurso, Universidade universidade) {

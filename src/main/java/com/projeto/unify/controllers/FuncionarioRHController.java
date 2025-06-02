@@ -39,7 +39,6 @@ public class FuncionarioRHController {
         return ResponseEntity.ok(professores);
     }
 
-    // Funcionario Endpoints for RH Universidade
     @PostMapping("/funcionarios/")
     public ResponseEntity<Funcionario> criarFuncionario(@Valid @RequestBody FuncionarioDTO funcionarioDTO) {
         Funcionario novoFuncionario = funcionarioService.criar(funcionarioDTO);

@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -65,7 +66,7 @@ public class ProfessorService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Titulação é obrigatória.");
         }
 
-        String emailInstitucional = gerarEmailInstitucionalProfessor(dto, universidadeDoRH, dto.getTitulacao());
+        String emailInstitucional = gerarEmailInstitucionalProfessor(dto, universidadeDoRH);
 
         if (usuarioRepository.existsByEmail(emailInstitucional)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email institucional gerado já cadastrado no sistema.");
@@ -150,7 +151,7 @@ public class ProfessorService {
         return professorRepository.findAll();
     }
 
-    private String gerarEmailInstitucionalProfessor(ProfessorDTO dto, Universidade universidade, String setor) {
+    private String gerarEmailInstitucionalProfessor(ProfessorDTO dto, Universidade universidade) {
         String primeiroNome = dto.getNome().toLowerCase()
                 .split(" ")[0]
                 .replace("ç", "c")
@@ -250,6 +251,20 @@ public class ProfessorService {
 
         Universidade universidade = getUniversidadeDoUsuarioLogado();
         return professorRepository.findByUniversidadeId(universidade.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Professor> buscarPorUsuarioEmail(String email) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+        if (usuarioOpt.isPresent()) {
+            return professorRepository.findByUsuarioId(usuarioOpt.get().getId());
+        }
+        return Optional.empty();
+    }
+
+    public Professor buscarPorId(Long id) {
+        return professorRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado com ID: " + id));
     }
 
 }

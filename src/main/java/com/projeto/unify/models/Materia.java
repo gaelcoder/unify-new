@@ -31,6 +31,9 @@ public class Materia {
     @Column(nullable = true)
     private int creditosNecessarios;
 
+    @Column(nullable = false)
+    private Double notaMinimaAprovacao;
+
     @ManyToMany
     @JoinTable(
             name = "materia_graduacao",
@@ -42,10 +45,11 @@ public class Materia {
     @OneToMany(mappedBy = "materia")
     private List<Turma> turmas = new ArrayList<>();
 
-    public Materia(String titulo, int creditos, int cargaHoraria) {
+    public Materia(String titulo, int creditos, int cargaHoraria, Double notaMinimaAprovacao) {
         this.titulo = titulo;
         this.creditos = creditos;
         this.cargaHoraria = cargaHoraria;
         this.creditosNecessarios = 0;
+        this.notaMinimaAprovacao = notaMinimaAprovacao;
     }
 }
