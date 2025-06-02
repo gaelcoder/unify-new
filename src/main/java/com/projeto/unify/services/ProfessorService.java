@@ -1,6 +1,5 @@
 package com.projeto.unify.services;
 
-import com.projeto.unify.dtos.FuncionarioDTO;
 import com.projeto.unify.dtos.ProfessorDTO;
 import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.AlunoRepository;
@@ -26,11 +25,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProfessorService {
 
-    private static final String TITULO_DR = "Dr. / Dr.a";
-    private static final String TITULO_MESTRE = "M.e / M.ª";
-    private static final String TITULO_ESPECIALISTA = "Especialista";
-    private static final List<String> TITULACOES_VALIDAS = Arrays.asList(TITULO_DR, TITULO_ESPECIALISTA, TITULO_MESTRE);
-
+    // Updated list of valid titulations to match frontend preference
+    private static final List<String> TITULACOES_VALIDAS = Arrays.asList(
+        "Graduado", 
+        "Especialista", 
+        "Mestre", 
+        "Doutor", 
+        "Pós-Doutor"
+    );
 
     private final FuncionarioRepository funcionarioRepository;
     private final RepresentanteRepository representanteRepository;

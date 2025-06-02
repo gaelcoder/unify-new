@@ -23,7 +23,7 @@ public class Turma {
     @ManyToOne
     private Professor professor;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "materia_id", nullable = false)
     @NotNull(message = "A matéria é obrigatória")
     private Materia materia;
