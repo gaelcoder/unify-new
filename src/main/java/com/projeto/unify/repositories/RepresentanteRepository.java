@@ -16,4 +16,8 @@ public interface RepresentanteRepository extends JpaRepository<Representante, Lo
     Optional<Representante> findByTelefone(String telefone);
     Optional<Representante> findByUsuario(Usuario usuario);
     Optional<Representante> findByUsuarioId(Long usuarioId);
+
+    // Methods for conflict checking during updates
+    boolean existsByEmailAndIdNot(String email, Long id);
+    boolean existsByCpfAndIdNot(String cpf, Long id);
 }

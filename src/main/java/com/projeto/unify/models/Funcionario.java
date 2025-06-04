@@ -23,7 +23,7 @@ public class Funcionario extends Pessoa {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "universidade_id")
-    @JsonBackReference
+    @JsonBackReference("universidade-funcionarios")
     private Universidade universidade;
 
     @Email

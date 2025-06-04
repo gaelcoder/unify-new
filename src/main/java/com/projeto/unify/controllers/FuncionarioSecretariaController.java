@@ -59,7 +59,7 @@ public class FuncionarioSecretariaController {
 
     @GetMapping("/graduacoes/{id}")
     public ResponseEntity<Graduacao> buscarGraduacaoPorId(@PathVariable Long id) {
-        Graduacao graduacao = graduacaoService.buscarPorIdEUniversidadeDoUsuarioLogado(id);
+        Graduacao graduacao = graduacaoService.buscarPorId(id);
         return ResponseEntity.ok(graduacao);
     }
 

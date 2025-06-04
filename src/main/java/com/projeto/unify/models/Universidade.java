@@ -41,21 +41,24 @@ public class Universidade {
     private List<String> campus = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    @JsonManagedReference("universidade-alunos")
     private List<Aluno> alunos = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonManagedReference("universidade-funcionarios")
     private List<Funcionario> funcionarios = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    @JsonManagedReference("universidade-professores")
     private List<Professor> professores = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
+    @JsonManagedReference("universidade-graduacoes")
     private List<Graduacao> graduacoes = new ArrayList<>();
 
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "representante_id")
-    @JsonManagedReference
+    @JsonManagedReference("universidade-representante")
     private Representante representante;
 
 

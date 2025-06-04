@@ -19,4 +19,8 @@ public interface ProfessorRepository extends JpaRepository<Professor, Long> {
     Optional<Professor> findByUsuario(Usuario usuario);
     Optional<Professor> findByUsuarioId(Long usuarioId);
     List<Professor> findByUniversidadeId(Long universidadeId);
+
+    // Methods for conflict checking during updates
+    boolean existsByEmailAndIdNot(String email, Long id);
+    boolean existsByCpfAndIdNot(String cpf, Long id);
 }

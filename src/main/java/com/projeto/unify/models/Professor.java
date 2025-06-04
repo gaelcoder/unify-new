@@ -40,7 +40,7 @@ public class Professor extends Pessoa {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "universidade_id")
-    @JsonBackReference
+    @JsonBackReference("universidade-professores")
     private Universidade universidade;
 
     @OneToOne

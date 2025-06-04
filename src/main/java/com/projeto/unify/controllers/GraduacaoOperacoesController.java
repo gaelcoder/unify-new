@@ -1,27 +1,27 @@
 package com.projeto.unify.controllers;
 
 import com.projeto.unify.models.Professor;
-import com.projeto.unify.services.ProfessorService; // Your backend ProfessorService
+import com.projeto.unify.services.ProfessorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/graduacao-operacoes") // A more general path for graduation-related operations
+@RequestMapping("/api/graduacao-operacoes")
 @RequiredArgsConstructor
 public class GraduacaoOperacoesController {
 
-    private final ProfessorService professorService; // Your backend ProfessorService
+    private final ProfessorService professorService;
 
-    // Endpoint to list professors for a given university, intended for selection as coordinator
-    // The backend ProfessorService should filter out those already coordinating other courses.
-    // Security for this endpoint is handled in SecurityConfig.java
     @GetMapping("/professores/por-universidade/{universidadeId}")
-    public ResponseEntity<List<Professor>> listarProfessoresDisponiveisParaCoordenacao(
-            @PathVariable Long universidadeId) {
-        // This method in your backend ProfessorService MUST exist and perform the necessary filtering
+    @PreAuthorize("hasAnyAuthority('ROLE_FUNCIONARIO', 'ROLE_FUNCIONARIO_RH')")
+    public ResponseEntity<List<Professor>> listarProfessoresPorUniversidadeParaCoordenacao(@PathVariable Long universidadeId) {
         List<Professor> professores = professorService.listarProfessoresPorUniversidadeDisponiveisParaCoordenacao(universidadeId);
         return ResponseEntity.ok(professores);
     }

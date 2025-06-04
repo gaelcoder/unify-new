@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "aluno")
@@ -37,6 +38,7 @@ public class Aluno extends Pessoa {
 
     @ManyToOne
     @JoinColumn(name = "universidade_id", nullable = false)
+    @JsonBackReference("universidade-alunos")
     private Universidade universidade;
 
     @ManyToOne

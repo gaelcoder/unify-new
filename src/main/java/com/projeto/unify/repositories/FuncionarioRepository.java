@@ -18,4 +18,8 @@ public interface FuncionarioRepository extends JpaRepository<Funcionario, Long> 
     Optional<Funcionario> findByUsuarioId(Long usuarioId);
     List<Funcionario> findByUniversidadeId(Long universidadeId);
     long countByUniversidadeId(Long universidadeId);
+
+    // Methods for conflict checking during updates
+    boolean existsByEmailAndIdNot(String email, Long id);
+    boolean existsByCpfAndIdNot(String cpf, Long id);
 }

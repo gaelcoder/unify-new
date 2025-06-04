@@ -7,6 +7,7 @@ import com.projeto.unify.repositories.FuncionarioRepository;
 import com.projeto.unify.repositories.ProfessorRepository;
 import com.projeto.unify.repositories.RepresentanteRepository;
 import com.projeto.unify.repositories.UsuarioRepository;
+import com.projeto.unify.repositories.GraduacaoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -43,6 +44,7 @@ public class ProfessorService {
     private final PasswordEncoder passwordEncoder;
     private final PerfilService perfilService;
     private final EmailService emailService;
+    private final GraduacaoRepository graduacaoRepository;
 
     @Transactional
     public Professor criar(ProfessorDTO dto) {
@@ -221,35 +223,122 @@ public class ProfessorService {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    private Universidade getUniversidadeDoUsuarioLogado() {
+    // Helper method to get the University of the currently logged-in RH Funcionario
+    private Universidade getUniversidadeDoFuncionarioRHLogado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioLogado = authentication.getName();
         Usuario usuarioLogado = usuarioService.findByEmail(emailUsuarioLogado);
 
-        Professor professor = professorRepository.findByUsuarioId(usuarioLogado.getId())
+        // Assuming FUNCIONARIO_RH is a type of Funcionario
+        Funcionario funcionario = funcionarioRepository.findByUsuarioId(usuarioLogado.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Usuário não é um usuário de RH válido para acessar esta funcionalidade."));
+                        "Usuário logado não é um funcionário válido para esta operação."));
 
-        Universidade universidade = professor.getUniversidade();
+        Universidade universidade = funcionario.getUniversidade();
         if (universidade == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Professor não está associado a nenhuma universidade.");
+                    "Funcionário não está associado a nenhuma universidade.");
         }
         return universidade;
     }
 
     @Transactional(readOnly = true)
     public List<Professor> listarTodosPorUniversidadeDoUsuarioLogado() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        boolean isRHUniversidade = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO_RH"));
+        Universidade universidadeDoRH = getUniversidadeDoFuncionarioRHLogado();
+        return professorRepository.findByUniversidadeId(universidadeDoRH.getId());
+    }
 
-        if (isRHUniversidade) {
-          return professorRepository.findAll();
+    @Transactional(readOnly = true)
+    public Professor buscarProfessorPorId(Long id) {
+        return professorRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado com o ID: " + id));
+    }
+
+    @Transactional
+    public Professor atualizarProfessor(Long id, ProfessorDTO dto) {
+        Professor professor = buscarProfessorPorId(id); // Reuses the findById logic
+
+        // Basic field updates
+        professor.setNome(dto.getNome());
+        professor.setSobrenome(dto.getSobrenome());
+        professor.setDataNascimento(dto.getDataNascimento());
+        professor.setTelefone(dto.getTelefone());
+        professor.setSalario(dto.getSalario());
+
+        if (dto.getTitulacao() == null || dto.getTitulacao().isBlank() || !TITULACOES_VALIDAS.contains(dto.getTitulacao())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Titulação é obrigatória e deve ser válida.");
+        }
+        professor.setTitulacao(dto.getTitulacao());
+
+        // Email Pessoal - update if provided and different, check for conflicts
+        if (dto.getEmail() != null && !dto.getEmail().isBlank() && !dto.getEmail().equals(professor.getEmail())) {
+            if (usuarioRepository.existsByEmailAndIdNot(dto.getEmail(), professor.getUsuario().getId()) || // Check other users
+                alunoRepository.existsByEmailAndIdNot(dto.getEmail(), null) || // Assuming Aluno ID is not directly on Professor for this check
+                funcionarioRepository.existsByEmailAndIdNot(dto.getEmail(), null) ||
+                representanteRepository.existsByEmailAndIdNot(dto.getEmail(), null) ||
+                professorRepository.existsByEmailAndIdNot(dto.getEmail(), professor.getId())) { // Check other professors
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email pessoal informado já cadastrado no sistema para outro usuário.");
+            }
+            professor.setEmail(dto.getEmail());
+        }
+        
+        // CPF - update if provided and different, check for conflicts
+        // Note: CPF is highly sensitive and usually not updatable or requires special permissions.
+        // For now, allowing update but with conflict checks.
+        if (dto.getCpf() != null && !dto.getCpf().isBlank() && !dto.getCpf().equals(professor.getCpf())) {
+             if (alunoRepository.existsByCpfAndIdNot(dto.getCpf(), null) ||
+                 funcionarioRepository.existsByCpfAndIdNot(dto.getCpf(), null) ||
+                 representanteRepository.existsByCpfAndIdNot(dto.getCpf(), null) ||
+                 professorRepository.existsByCpfAndIdNot(dto.getCpf(), professor.getId())) {
+                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF informado já cadastrado no sistema para outro usuário.");
+             }
+            professor.setCpf(dto.getCpf());
         }
 
-        Universidade universidade = getUniversidadeDoUsuarioLogado();
-        return professorRepository.findByUniversidadeId(universidade.getId());
+        // Update associated Usuario name if professor name changes
+        Usuario usuarioAssociado = professor.getUsuario();
+        if (usuarioAssociado != null) {
+            usuarioAssociado.setNome(professor.getNomeCompleto());
+            usuarioRepository.save(usuarioAssociado);
+        }
+
+        return professorRepository.save(professor);
+    }
+
+    @Transactional
+    public void deletarProfessor(Long id) {
+        Professor professor = buscarProfessorPorId(id); // Ensures professor exists
+        
+        // Consider implications:
+        // 1. What if the professor is a coordinator of a course? Prevent deletion or handle reassignment.
+        //    For now, this is not handled here but should be a business rule.
+        // 2. Associated Usuario: Deactivate or delete?
+        //    For now, just deleting the professor record. The Usuario might remain or be handled by a separate process.
+
+        professorRepository.delete(professor);
+        
+        // Optionally, delete or deactivate the associated Usuario
+        // Usuario usuarioParaDeletar = professor.getUsuario();
+        // if (usuarioParaDeletar != null) {
+        //     usuarioRepository.delete(usuarioParaDeletar); // or set to inactive
+        // }
+    }
+
+    // Method for Graduation Form - listing professors available for coordination
+    @Transactional(readOnly = true)
+    public List<Professor> listarProfessoresPorUniversidadeDisponiveisParaCoordenacao(Long universidadeId) {
+        List<Professor> professoresDaUniversidade = professorRepository.findByUniversidadeId(universidadeId);
+        List<Long> idsCoordenadores = graduacaoRepository.findDistinctCoordenadorDoCursoIdByUniversidadeId(universidadeId);
+
+        if (idsCoordenadores == null || idsCoordenadores.isEmpty()) {
+            return professoresDaUniversidade; // No coordinators found, return all professors from the university
+        }
+
+        // Filter out professors who are already coordinators
+        // A professor is identified by their main ID (Professor.id), and Graduacao.coordenadorDoCursoId stores this Professor.id
+        return professoresDaUniversidade.stream()
+                .filter(professor -> !idsCoordenadores.contains(professor.getId()))
+                .collect(java.util.stream.Collectors.toList());
     }
 
 }

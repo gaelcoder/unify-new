@@ -2,6 +2,7 @@ package com.projeto.unify.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -35,6 +36,7 @@ public class Graduacao {
 
     @ManyToOne
     @JoinColumn(name = "universidade_id", nullable = false)
+    @JsonBackReference("universidade-graduacoes")
     private Universidade universidade;
 
     @ManyToMany(mappedBy = "graduacoes")

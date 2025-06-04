@@ -27,7 +27,7 @@ public class Representante extends Pessoa {
     private String cargo;
 
     @OneToOne(mappedBy = "representante")
-    @JsonBackReference
+    @JsonBackReference("universidade-representante")
     private Universidade universidade;
 
     @OneToOne
