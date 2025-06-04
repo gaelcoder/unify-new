@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Min;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class GraduacaoDTO {
@@ -22,5 +24,5 @@ public class GraduacaoDTO {
 
     private Long coordenadorDoCursoId;
 
-    private String campusDisponivel;
+    private List<String> campiDisponiveis;
 }

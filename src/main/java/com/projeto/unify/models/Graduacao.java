@@ -43,8 +43,10 @@ public class Graduacao {
     @OneToMany(mappedBy = "graduacao")
     private List<Aluno> alunos = new ArrayList<>();
 
-
-    private String campusDisponivel;
+    @ElementCollection
+    @CollectionTable(name = "graduacao_campus_disponiveis", joinColumns = @JoinColumn(name = "graduacao_id"))
+    @Column(name = "campus")
+    private List<String> campusDisponiveis = new ArrayList<>();
 
     public Graduacao(String titulo, int semestres, String codigoCurso, Universidade universidade) {
         this.titulo = titulo;

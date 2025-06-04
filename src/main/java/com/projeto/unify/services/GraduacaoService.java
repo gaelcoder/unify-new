@@ -54,7 +54,7 @@ public class GraduacaoService {
         graduacao.setTitulo(dto.getTitulo());
         graduacao.setSemestres(dto.getSemestres());
         graduacao.setCodigoCurso(dto.getCodigoCurso());
-        graduacao.setCampusDisponivel(dto.getCampusDisponivel());
+        graduacao.setCampusDisponiveis(dto.getCampiDisponiveis());
         graduacao.setUniversidade(universidade);
 
         if (dto.getCoordenadorDoCursoId() != null) {
@@ -86,12 +86,10 @@ public class GraduacaoService {
         Graduacao graduacao = graduacaoRepository.findByIdAndUniversidade(id, universidade)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Graduação não encontrada ou não pertence à sua universidade para atualização."));
 
-        // TODO: Add validation to ensure codigoCurso is unique within the university (if changed)
-
         graduacao.setTitulo(dto.getTitulo());
         graduacao.setSemestres(dto.getSemestres());
         graduacao.setCodigoCurso(dto.getCodigoCurso());
-        graduacao.setCampusDisponivel(dto.getCampusDisponivel());
+        graduacao.setCampusDisponiveis(dto.getCampiDisponiveis());
 
         if (dto.getCoordenadorDoCursoId() != null) {
             Professor coordenador = professorRepository.findById(dto.getCoordenadorDoCursoId())
