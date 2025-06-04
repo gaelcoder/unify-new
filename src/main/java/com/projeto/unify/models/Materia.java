@@ -1,6 +1,8 @@
 package com.projeto.unify.models;
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -37,9 +39,11 @@ public class Materia {
             joinColumns = @JoinColumn(name = "materia_id"),
             inverseJoinColumns = @JoinColumn(name = "graduacao_id")
     )
+    @JsonIgnoreProperties("materias")
     private Set<Graduacao> graduacoes = new HashSet<>();
 
     @OneToMany(mappedBy = "materia")
+    @JsonManagedReference("materia-turmas")
     private List<Turma> turmas = new ArrayList<>();
 
     public Materia(String titulo, int creditos, int cargaHoraria) {

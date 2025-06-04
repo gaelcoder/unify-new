@@ -6,6 +6,8 @@ import java.util.Objects;
 import jakarta.validation.constraints.*;
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 
 @Entity
@@ -21,11 +23,13 @@ public class Turma {
     private Long id;
 
     @ManyToOne
+    @JsonBackReference("professor-turmas")
     private Professor professor;
 
     @ManyToOne
     @JoinColumn(name = "materia_id", nullable = false)
     @NotNull(message = "A matéria é obrigatória")
+    @JsonBackReference("materia-turmas")
     private Materia materia;
 
     @Column(nullable = false)
@@ -42,6 +46,7 @@ public class Turma {
     private Graduacao graduacao;
 
     @OneToMany(mappedBy = "turma", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("turma-alunos")
     private List<Aluno> alunos = new ArrayList<>();
 
     public Turma(Materia materia, String turno, int limiteAlunos) {

@@ -1,6 +1,7 @@
 package com.projeto.unify.services;
 
 import com.projeto.unify.dtos.AlunoDTO;
+import com.projeto.unify.dtos.ProfessorDTO;
 import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.*;
 import lombok.RequiredArgsConstructor;
@@ -17,11 +18,13 @@ import java.util.UUID;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import jakarta.persistence.EntityManager;
 
 @Service
 @RequiredArgsConstructor
 public class AlunoService {
 
+    private final EntityManager entityManager;
     private final AlunoRepository alunoRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final ProfessorRepository professorRepository;
@@ -106,15 +109,17 @@ public class AlunoService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Telefone já cadastrado.");
             }
         }
-        
+
+        String emailInstitucional = gerarEmailInstitucionalAluno(dto, universidadeDoAluno);
+
         Usuario novoUsuarioAluno = new Usuario();
-        novoUsuarioAluno.setEmail(emailAluno); 
+        novoUsuarioAluno.setEmail(emailInstitucional);
         novoUsuarioAluno.setNome(dto.getNome() + " " + dto.getSobrenome());
         novoUsuarioAluno.setPrimeiroAcesso(true);
         String senhaTemporaria = gerarSenhaAleatoria();
         novoUsuarioAluno.setSenha(passwordEncoder.encode(senhaTemporaria));
         Perfil perfilAluno = perfilService.obterOuCriarPerfil(Perfil.TipoPerfil.ROLE_ALUNO);
-        novoUsuarioAluno.setPerfis(Set.of(perfilAluno));
+        novoUsuarioAluno.adicionarPerfil(perfilAluno);
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuarioAluno);
 
         Aluno aluno = new Aluno();
@@ -134,7 +139,7 @@ public class AlunoService {
 
         try {
             if (emailService != null && emailAluno != null && !emailAluno.isBlank()) {
-                emailService.enviarCredenciaisAcesso(emailAluno, emailAluno, senhaTemporaria, aluno.getNomeCompleto());
+                emailService.enviarCredenciaisAcesso(emailAluno, emailInstitucional, senhaTemporaria, aluno.getNomeCompleto());
             }
         } catch (Exception e) {
             System.err.println("Falha ao enviar email de primeiro acesso para " + emailAluno + ": " + e.getMessage());
@@ -267,6 +272,75 @@ public class AlunoService {
             }
         }
     }
+
+
+    private String gerarEmailInstitucionalAluno(AlunoDTO dto, Universidade universidade) {
+        String primeiroNome = dto.getNome().toLowerCase()
+                .split(" ")[0]
+                .replace("ç", "c")
+                .replace("á", "a")
+                .replace("à", "a")
+                .replace("ã", "a")
+                .replace("â", "a")
+                .replace("é", "e")
+                .replace("ê", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ô", "o")
+                .replace("õ", "o")
+                .replace("ú", "u")
+                .replace("ü", "u");
+
+        String ultimoSobrenome = dto.getSobrenome().toLowerCase();
+        if (ultimoSobrenome.contains(" ")) {
+            String[] partes = ultimoSobrenome.split(" ");
+            ultimoSobrenome = partes[partes.length - 1];
+        }
+        ultimoSobrenome = ultimoSobrenome
+                .replace("ç", "c")
+                .replace("á", "a")
+                .replace("à", "a")
+                .replace("ã", "a")
+                .replace("â", "a")
+                .replace("é", "e")
+                .replace("ê", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ô", "o")
+                .replace("õ", "o")
+                .replace("ú", "u")
+                .replace("ü", "u");
+
+        String nomeUniversidade = universidade.getNome().toLowerCase()
+                .replace(" ", "")
+                .replace("universidade", "")
+                .replace("faculdade", "")
+                .replace("instituto", "")
+                .replace("ç", "c")
+                .replace("á", "a")
+                .replace("à", "a")
+                .replace("ã", "a")
+                .replace("â", "a")
+                .replace("é", "e")
+                .replace("ê", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ô", "o")
+                .replace("õ", "o")
+                .replace("ú", "u")
+                .replace("ü", "u");
+
+        String parteUniversidade;
+        if (nomeUniversidade.length() > 10 && universidade.getSigla() != null && !universidade.getSigla().isEmpty()) {
+            parteUniversidade = universidade.getSigla().toLowerCase();
+        } else {
+            parteUniversidade = nomeUniversidade;
+        }
+
+        String infixEmail = "al";
+        return primeiroNome + "." + ultimoSobrenome + "@" + infixEmail + "." + parteUniversidade + ".unify.edu.com";
+    }
+
 
     private Funcionario getFuncionarioLogado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

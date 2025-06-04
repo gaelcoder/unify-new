@@ -1,6 +1,7 @@
 package com.projeto.unify.models;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Perfil {
 
     @Id
@@ -18,6 +20,7 @@ public class Perfil {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true)
+    @EqualsAndHashCode.Include
     private TipoPerfil nome;
 
     public enum TipoPerfil {

@@ -3,6 +3,8 @@ package com.projeto.unify.models;
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -40,9 +42,11 @@ public class Graduacao {
     private Universidade universidade;
 
     @ManyToMany(mappedBy = "graduacoes")
+    @JsonIgnoreProperties("graduacoes")
     private Set<Materia> materias = new HashSet<>();
 
     @OneToMany(mappedBy = "graduacao")
+    @JsonManagedReference("graduacao-alunos")
     private List<Aluno> alunos = new ArrayList<>();
 
     @ElementCollection

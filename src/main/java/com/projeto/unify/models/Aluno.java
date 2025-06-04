@@ -34,6 +34,7 @@ public class Aluno extends Pessoa {
 
     @ManyToOne
     @JoinColumn(name = "turma_id")
+    @JsonBackReference("turma-alunos")
     private Turma turma;
 
     @ManyToOne
@@ -43,6 +44,7 @@ public class Aluno extends Pessoa {
 
     @ManyToOne
     @JoinColumn(name = "graduacao_id")
+    @JsonBackReference("graduacao-alunos")
     private Graduacao graduacao;
 
     @OneToOne

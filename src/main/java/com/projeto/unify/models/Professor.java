@@ -1,6 +1,7 @@
 package com.projeto.unify.models;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.projeto.unify.models.base.Pessoa;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,6 +37,7 @@ public class Professor extends Pessoa {
     private String telefone;
 
     @OneToMany(mappedBy = "professor", fetch = FetchType.LAZY)
+    @JsonManagedReference("professor-turmas")
     private Set<Turma> turmas = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

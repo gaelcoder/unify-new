@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN_GERAL")
                         .requestMatchers("/api/admin-universidade/**").hasAuthority("ROLE_ADMIN_UNIVERSIDADE")
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
