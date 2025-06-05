@@ -24,5 +24,5 @@ public class GraduacaoDTO {
 
     private Long coordenadorDoCursoId;
 
-    private List<String> campiDisponiveis;
+    private List<String> campusDisponiveis;
 }

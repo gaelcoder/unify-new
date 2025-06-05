@@ -1,5 +1,6 @@
 package com.projeto.unify.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -47,9 +48,10 @@ public class Graduacao {
 
     @OneToMany(mappedBy = "graduacao")
     @JsonManagedReference("graduacao-alunos")
+    @JsonIgnore
     private List<Aluno> alunos = new ArrayList<>();
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "graduacao_campus_disponiveis", joinColumns = @JoinColumn(name = "graduacao_id"))
     @Column(name = "campus")
     private List<String> campusDisponiveis = new ArrayList<>();

@@ -44,7 +44,6 @@ public class Aluno extends Pessoa {
 
     @ManyToOne
     @JoinColumn(name = "graduacao_id")
-    @JsonBackReference("graduacao-alunos")
     private Graduacao graduacao;
 
     @OneToOne

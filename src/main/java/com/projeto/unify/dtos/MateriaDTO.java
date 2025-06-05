@@ -1,35 +1,40 @@
 package com.projeto.unify.dtos;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-
+import jakarta.validation.constraints.Positive;
+import lombok.Data;
 import java.util.List;
 import java.util.Set;
 
-@Getter
-@Setter
+@Data
 public class MateriaDTO {
 
-    @NotBlank(message = "Título é obrigatório")
+    private Long id; // Optional: Used for response, not typically for create/update request directly unless specified
+
+    @NotBlank(message = "Título da matéria é obrigatório.")
     private String titulo;
 
-    @NotNull(message = "Créditos são obrigatórios")
-    @Min(value = 1, message = "Créditos devem ser no mínimo 1")
+    @NotBlank(message = "Código da matéria é obrigatório.")
+    private String codigo;
+
+    @NotNull(message = "Créditos são obrigatórios.")
+    @Positive(message = "Créditos devem ser um número positivo.")
     private Integer creditos;
 
-    @NotNull(message = "Carga horária é obrigatória")
-    @Min(value = 1, message = "Carga horária deve ser no mínimo 1")
+    @NotNull(message = "Carga horária é obrigatória.")
+    @Positive(message = "Carga horária deve ser um número positivo.")
     private Integer cargaHoraria;
 
-    @Min(value = 0, message = "Créditos necessários não podem ser negativos")
-    private Integer creditosNecessarios; // Opcional, pode ser 0
+    private String ementa; // Syllabus/Description - optional
 
-    @NotNull(message = "IDs das graduações são obrigatórios")
-    @Size(min = 1, message = "A matéria deve ser associada a pelo menos uma graduação")
-    private Set<Long> graduacaoIds; // IDs das Graduacoes às quais esta matéria pertence
+    private Integer creditosNecessarios; // Prerequisite credits - optional, defaults to 0 if not provided
 
+    // Assuming universidadeId will be derived from the logged-in Funcionario (Secretary)
+    // If it needs to be specified in the DTO (e.g., for a super admin), uncomment below
+    // private Long universidadeId;
+
+    @NotEmpty(message = "A matéria deve ser associada a pelo menos uma graduação.")
+    private Set<Long> graduacaoIds;
 } 

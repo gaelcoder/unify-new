@@ -54,18 +54,11 @@ public class GraduacaoService {
     public Graduacao criar(GraduacaoDTO dto) {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
 
-        // TODO: Add validation to ensure codigoCurso is unique within the university
-
-        // Log the received campiDisponiveis
-        System.out.println("Received campiDisponiveis in DTO: " + dto.getCampiDisponiveis());
-        // Replace System.out.println with actual logger: 
-        // logger.info("Received campiDisponiveis in DTO: {}", dto.getCampiDisponiveis());
-
         Graduacao graduacao = new Graduacao();
         graduacao.setTitulo(dto.getTitulo());
         graduacao.setSemestres(dto.getSemestres());
         graduacao.setCodigoCurso(dto.getCodigoCurso());
-        graduacao.setCampusDisponiveis(dto.getCampiDisponiveis());
+        graduacao.setCampusDisponiveis(dto.getCampusDisponiveis());
         graduacao.setUniversidade(universidade);
 
         if (dto.getCoordenadorDoCursoId() != null) {
@@ -77,7 +70,9 @@ public class GraduacaoService {
             graduacao.setCoordenadorDoCurso(coordenador);
         }
 
-        return graduacaoRepository.save(graduacao);
+        Graduacao savedGraduacao = graduacaoRepository.save(graduacao);
+
+        return savedGraduacao;
     }
 
     @Transactional(readOnly = true)
@@ -89,6 +84,9 @@ public class GraduacaoService {
         if (!Objects.equals(graduacao.getUniversidade().getId(), universidadeDoFuncionario.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado a esta graduação.");
         }
+        
+        graduacao.getCampusDisponiveis().size(); 
+
         return graduacao;
     }
 
@@ -111,21 +109,25 @@ public class GraduacaoService {
     @Transactional
     public Graduacao atualizar(Long id, GraduacaoDTO dto) {
         Graduacao graduacaoExistente = buscarPorId(id); // Ensures it exists and user has access
+        Universidade universidadeDoFuncionario = getUniversidadeDoFuncionarioLogado(); // For validation
 
-        // Update fields - make sure to handle coordenadorDoCurso relation properly
         graduacaoExistente.setTitulo(dto.getTitulo());
         graduacaoExistente.setSemestres(dto.getSemestres());
         graduacaoExistente.setCodigoCurso(dto.getCodigoCurso());
-        graduacaoExistente.setCampusDisponiveis(dto.getCampiDisponiveis());
+        graduacaoExistente.setCampusDisponiveis(dto.getCampusDisponiveis());
 
-        // Example for updating coordenador, assuming dto.getCoordenadorDoCursoId() is provided
-        // And assuming ProfessorService.buscarProfessorPorId() exists and returns Professor
-        // if (dto.getCoordenadorDoCursoId() != null) {
-        //     Professor coordenador = professorService.buscarProfessorPorId(dto.getCoordenadorDoCursoId());
-        //     graduacaoExistente.setCoordenadorDoCurso(coordenador);
-        // } else {
-        //     graduacaoExistente.setCoordenadorDoCurso(null); // Or handle as per your business logic
-        // }
+        if (dto.getCoordenadorDoCursoId() != null) {
+            Professor coordenador = professorRepository.findById(dto.getCoordenadorDoCursoId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor (coordenador) não encontrado com o ID: " + dto.getCoordenadorDoCursoId()));
+            
+            // Validate that the chosen professor belongs to the same university
+            if (!coordenador.getUniversidade().equals(universidadeDoFuncionario)) {
+                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Coordenador selecionado não pertence à universidade do funcionário.");
+            }
+            graduacaoExistente.setCoordenadorDoCurso(coordenador);
+        } else {
+            graduacaoExistente.setCoordenadorDoCurso(null); // Allow unsetting the coordinator
+        }
 
         return graduacaoRepository.save(graduacaoExistente);
     }

@@ -1,10 +1,15 @@
 package com.projeto.unify.services;
 
 import com.projeto.unify.dtos.MateriaDTO;
-import com.projeto.unify.models.*;
+import com.projeto.unify.models.Funcionario;
+import com.projeto.unify.models.Graduacao;
+import com.projeto.unify.models.Materia;
+import com.projeto.unify.models.Universidade;
+import com.projeto.unify.models.Usuario;
 import com.projeto.unify.repositories.FuncionarioRepository;
 import com.projeto.unify.repositories.GraduacaoRepository;
 import com.projeto.unify.repositories.MateriaRepository;
+import com.projeto.unify.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -23,106 +28,114 @@ import java.util.stream.Collectors;
 public class MateriaService {
 
     private final MateriaRepository materiaRepository;
+    private final GraduacaoRepository graduacaoRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final UsuarioService usuarioService;
-    private final GraduacaoRepository graduacaoRepository;
 
     private Universidade getUniversidadeDoFuncionarioLogado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioLogado = authentication.getName();
         Usuario usuarioLogado = usuarioService.findByEmail(emailUsuarioLogado);
+
         Funcionario funcionario = funcionarioRepository.findByUsuarioId(usuarioLogado.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Funcionário não encontrado para o usuário logado."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário logado não é um funcionário válido ou não encontrado."));
+
         if (funcionario.getUniversidade() == null) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Funcionário logado não está associado a nenhuma universidade.");
         }
         return funcionario.getUniversidade();
     }
 
-    private Set<Graduacao> validarEProcessarGraduacoes(Set<Long> graduacaoIds, Universidade universidadeFuncionario) {
-        if (graduacaoIds == null || graduacaoIds.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A matéria deve ser associada a pelo menos uma graduação.");
+    @Transactional
+    public Materia criarMateria(MateriaDTO materiaDTO) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+
+        if (materiaRepository.existsByCodigoAndUniversidade(materiaDTO.getCodigo(), universidade)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Já existe uma matéria com o código " + materiaDTO.getCodigo() + " nesta universidade.");
         }
-        Set<Graduacao> graduacoesProcessadas = new HashSet<>();
-        for (Long gradId : graduacaoIds) {
-            Graduacao grad = graduacaoRepository.findById(gradId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Graduação com ID " + gradId + " não encontrada."));
-            if (!grad.getUniversidade().equals(universidadeFuncionario)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Graduação " + grad.getTitulo() + " (ID: " + gradId + ") não pertence à sua universidade.");
+
+        Materia materia = new Materia();
+        materia.setTitulo(materiaDTO.getTitulo());
+        materia.setCodigo(materiaDTO.getCodigo());
+        materia.setCreditos(materiaDTO.getCreditos());
+        materia.setCargaHoraria(materiaDTO.getCargaHoraria());
+        materia.setCreditosNecessarios(materiaDTO.getCreditosNecessarios() != null ? materiaDTO.getCreditosNecessarios() : 0);
+        materia.setUniversidade(universidade);
+
+        Set<Graduacao> graduacoes = new HashSet<>();
+        if (materiaDTO.getGraduacaoIds() != null && !materiaDTO.getGraduacaoIds().isEmpty()) {
+            for (Long graduacaoId : materiaDTO.getGraduacaoIds()) {
+                Graduacao grad = graduacaoRepository.findByIdAndUniversidade(graduacaoId, universidade)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Graduação com ID " + graduacaoId + " não encontrada ou não pertence à sua universidade."));
+                graduacoes.add(grad);
             }
-            graduacoesProcessadas.add(grad);
         }
-        return graduacoesProcessadas;
+        materia.setGraduacoes(graduacoes);
+
+        return materiaRepository.save(materia);
     }
 
     @Transactional
-    public Materia criar(MateriaDTO dto) {
-        Universidade universidadeFuncionario = getUniversidadeDoFuncionarioLogado();
-        Set<Graduacao> graduacoesAssociadas = validarEProcessarGraduacoes(dto.getGraduacaoIds(), universidadeFuncionario);
+    public Materia atualizarMateria(Long materiaId, MateriaDTO materiaDTO) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        Materia materia = materiaRepository.findByIdAndUniversidade(materiaId, universidade)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada ou não pertence à sua universidade."));
 
-        // TODO: Add validation to ensure materia (titulo/codigo) is unique within the context (e.g., university or globally?)
+        // Check if codigo is being changed and if it conflicts
+        if (!materia.getCodigo().equals(materiaDTO.getCodigo())) {
+            if (materiaRepository.existsByCodigoAndUniversidade(materiaDTO.getCodigo(), universidade)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Já existe outra matéria com o código " + materiaDTO.getCodigo() + " nesta universidade.");
+            }
+            materia.setCodigo(materiaDTO.getCodigo());
+        }
 
-        Materia materia = new Materia();
-        materia.setTitulo(dto.getTitulo());
-        materia.setCreditos(dto.getCreditos());
-        materia.setCargaHoraria(dto.getCargaHoraria());
-        materia.setCreditosNecessarios(dto.getCreditosNecessarios() != null ? dto.getCreditosNecessarios() : 0);
-        materia.setGraduacoes(graduacoesAssociadas);
+        materia.setTitulo(materiaDTO.getTitulo());
+        materia.setCreditos(materiaDTO.getCreditos());
+        materia.setCargaHoraria(materiaDTO.getCargaHoraria());
+        materia.setCreditosNecessarios(materiaDTO.getCreditosNecessarios() != null ? materiaDTO.getCreditosNecessarios() : 0);
+        // Universidade of Materia does not change
+
+        Set<Graduacao> graduacoes = new HashSet<>();
+        if (materiaDTO.getGraduacaoIds() != null && !materiaDTO.getGraduacaoIds().isEmpty()) {
+            for (Long graduacaoId : materiaDTO.getGraduacaoIds()) {
+                Graduacao grad = graduacaoRepository.findByIdAndUniversidade(graduacaoId, universidade)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Graduação com ID " + graduacaoId + " não encontrada ou não pertence à sua universidade para associação."));
+                graduacoes.add(grad);
+            }
+        }
+        materia.getGraduacoes().clear();
+        materia.getGraduacoes().addAll(graduacoes);
 
         return materiaRepository.save(materia);
     }
 
     public List<Materia> listarMateriasPorUniversidadeDoFuncionarioLogado() {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
-        // This will fetch materias that are linked to any graduacao from the secretary's university.
-        // Duplicates might occur if a materia is linked to multiple graduations of the same university, hence distinct.
-        return materiaRepository.findDistinctByGraduacoes_Universidade(universidade);
+        List<Materia> materias = materiaRepository.findByUniversidade(universidade);
+        // Ensure graduations are loaded if needed for DTO mapping or direct serialization
+        // For now, relying on Jackson config and eager/default fetching for ManyToMany related data if not too deep.
+        // Consider a DTO if serialization becomes an issue.
+        return materias;
     }
 
-    public Materia buscarMateriaPorIdEUniversidadeDoFuncionarioLogado(Long materiaId) {
+    public Materia buscarMateriaPorIdEUniversidade(Long materiaId) {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
-        Materia materia = materiaRepository.findById(materiaId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada com o ID: " + materiaId));
-
-        // Verify the materia is accessible by the funcionario (linked to at least one of their university's graduations)
-        boolean accessible = materia.getGraduacoes().stream()
-                .anyMatch(grad -> grad.getUniversidade().equals(universidade));
-        if (!accessible) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada ou não pertence à sua universidade (ID: " + materiaId + ").");
-        }
-        return materia;
+        return materiaRepository.findByIdAndUniversidade(materiaId, universidade)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada ou não pertence à sua universidade."));
     }
 
     @Transactional
-    public Materia atualizar(Long materiaId, MateriaDTO dto) {
-        Universidade universidadeFuncionario = getUniversidadeDoFuncionarioLogado();
-        Materia materia = buscarMateriaPorIdEUniversidadeDoFuncionarioLogado(materiaId); // Ensures initial access
-
-        Set<Graduacao> novasGraduacoesAssociadas = validarEProcessarGraduacoes(dto.getGraduacaoIds(), universidadeFuncionario);
-
-        // TODO: Add validation for uniqueness if titulo/codigo changes.
-
-        materia.setTitulo(dto.getTitulo());
-        materia.setCreditos(dto.getCreditos());
-        materia.setCargaHoraria(dto.getCargaHoraria());
-        materia.setCreditosNecessarios(dto.getCreditosNecessarios() != null ? dto.getCreditosNecessarios() : 0);
-        materia.getGraduacoes().clear(); // Remove old associations
-        materia.getGraduacoes().addAll(novasGraduacoesAssociadas); // Add new ones
-        // Alternatively, for finer control or to preserve other collection types:
-        // materia.setGraduacoes(novasGraduacoesAssociadas);
-
-        return materiaRepository.save(materia);
-    }
-
-    @Transactional
-    public void deletar(Long materiaId) {
-        // Ensure the materia is accessible and deletable by this funcionario
-        Materia materia = buscarMateriaPorIdEUniversidadeDoFuncionarioLogado(materiaId);
-
-        // TODO: Add business logic: check if there are Turmas associated with this Materia before deleting.
-        // For now, direct deletion. This will also clear entries from 'materia_graduacao' join table.
+    public void deletarMateria(Long materiaId) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        Materia materia = materiaRepository.findByIdAndUniversidade(materiaId, universidade)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada para exclusão ou não pertence à sua universidade."));
+        
+        // Disassociation from graduations will be handled by JPA on entity removal due to @JoinTable ownership.
+        // If there were other direct bidirectional child relationships owned by Materia, they might need explicit handling.
+        // Also, ensure no Turmas are using this Materia before deletion, or handle that linkage.
+        // For now, simple deletion. Add checks for Turmas if necessary.
         if (!materia.getTurmas().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Matéria não pode ser deletada pois possui turmas associadas. Remova as turmas primeiro.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Matéria não pode ser excluída pois está associada a uma ou mais turmas.");
         }
 
         materiaRepository.delete(materia);

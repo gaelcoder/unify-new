@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MateriaRepository extends JpaRepository<Materia, Long> {
@@ -17,4 +18,12 @@ public interface MateriaRepository extends JpaRepository<Materia, Long> {
 
     // Optional: A method to directly check if a materia is linked to a specific university.
     // boolean existsByIdAndGraduacoes_Universidade(Long id, Universidade universidade);
+
+    List<Materia> findByUniversidade(Universidade universidade);
+
+    Optional<Materia> findByIdAndUniversidade(Long id, Universidade universidade);
+
+    boolean existsByCodigoAndUniversidade(String codigo, Universidade universidade);
+
+    Optional<Materia> findByCodigoAndUniversidade(String codigo, Universidade universidade);
 }

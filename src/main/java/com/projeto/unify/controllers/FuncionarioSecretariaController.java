@@ -19,6 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -29,6 +31,7 @@ import java.util.List;
 @PreAuthorize("hasAuthority('ROLE_FUNCIONARIO')")
 public class FuncionarioSecretariaController {
 
+    private static final Logger logger = LoggerFactory.getLogger(FuncionarioSecretariaController.class);
     private final GraduacaoService graduacaoService;
     private final MateriaService materiaService;
     private final TurmaService turmaService;
@@ -79,7 +82,7 @@ public class FuncionarioSecretariaController {
 
     @PostMapping("/materias")
     public ResponseEntity<Materia> criarMateria(@Valid @RequestBody MateriaDTO materiaDTO) {
-        Materia novaMateria = materiaService.criar(materiaDTO);
+        Materia novaMateria = materiaService.criarMateria(materiaDTO);
         return new ResponseEntity<>(novaMateria, HttpStatus.CREATED);
     }
 
@@ -91,19 +94,19 @@ public class FuncionarioSecretariaController {
 
     @GetMapping("/materias/{id}")
     public ResponseEntity<Materia> buscarMateriaPorId(@PathVariable Long id) {
-        Materia materia = materiaService.buscarMateriaPorIdEUniversidadeDoFuncionarioLogado(id);
+        Materia materia = materiaService.buscarMateriaPorIdEUniversidade(id);
         return ResponseEntity.ok(materia);
     }
 
     @PutMapping("/materias/{id}")
     public ResponseEntity<Materia> atualizarMateria(@PathVariable Long id, @Valid @RequestBody MateriaDTO materiaDTO) {
-        Materia materiaAtualizada = materiaService.atualizar(id, materiaDTO);
+        Materia materiaAtualizada = materiaService.atualizarMateria(id, materiaDTO);
         return ResponseEntity.ok(materiaAtualizada);
     }
 
     @DeleteMapping("/materias/{id}")
     public ResponseEntity<Void> deletarMateria(@PathVariable Long id) {
-        materiaService.deletar(id);
+        materiaService.deletarMateria(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -150,6 +153,10 @@ public class FuncionarioSecretariaController {
     @GetMapping("/alunos")
     public ResponseEntity<List<Aluno>> listarAlunos() {
         List<Aluno> alunos = alunoService.listarPorUniversidadeDoFuncionarioLogado();
+        logger.info("Retornando lista de alunos. Quantidade: {}", alunos != null ? alunos.size() : "null");
+        if (alunos != null && alunos.isEmpty()) {
+            logger.info("A lista de alunos está vazia.");
+        }
         return ResponseEntity.ok(alunos);
     }
 

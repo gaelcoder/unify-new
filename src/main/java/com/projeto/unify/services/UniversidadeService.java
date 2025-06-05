@@ -122,12 +122,17 @@ public class UniversidadeService {
 
     public Universidade buscarPorId(Long id) {
         logger.debug("Buscando universidade com ID: {}", id);
-        return universidadeRepository.findById(id)
+        Universidade universidade = universidadeRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.warn("Universidade não encontrada com ID: {}", id);
                     return new ResponseStatusException(
                             HttpStatus.NOT_FOUND, "Universidade não encontrada");
                 });
+        // Initialize the campus collection to ensure it's loaded
+        if (universidade != null && universidade.getCampus() != null) {
+            universidade.getCampus().size(); // Accessing the collection
+        }
+        return universidade;
     }
 
     public Universidade atualizar(Long id, UniversidadeDTO dto, MultipartFile logoFile) {
