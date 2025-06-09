@@ -22,6 +22,11 @@ public class Turma {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "graduacao_id", nullable = true)
+    @JsonBackReference("graduacao-turmas")
+    private Graduacao graduacao;
+
     @ManyToOne
     @JsonBackReference("professor-turmas")
     private Professor professor;

@@ -51,6 +51,10 @@ public class Graduacao {
     @JsonIgnore
     private List<Aluno> alunos = new ArrayList<>();
 
+    @OneToMany(mappedBy = "graduacao")
+    @JsonManagedReference("graduacao-turmas")
+    private List<Turma> turmas = new ArrayList<>();
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "graduacao_campus_disponiveis", joinColumns = @JoinColumn(name = "graduacao_id"))
     @Column(name = "campus")
