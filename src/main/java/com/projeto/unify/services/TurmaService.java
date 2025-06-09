@@ -1,6 +1,7 @@
 package com.projeto.unify.services;
 
 import com.projeto.unify.dtos.TurmaCreateDTO;
+import com.projeto.unify.dtos.TurmaDTO;
 import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.*;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -99,9 +101,10 @@ public class TurmaService {
         return alunoRepository.findAlunosElegiveisParaTurma(universidade.getId(), campus, materiaId);
     }
 
-    public List<Turma> findAllByLoggedInUserUniversity() {
+    public List<TurmaDTO> findAllByLoggedInUserUniversity() {
         Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
-        return turmaRepository.findByProfessor_Universidade(uniFuncionario);
+        List<Turma> turmas = turmaRepository.findByProfessor_Universidade(uniFuncionario);
+        return turmas.stream().map(TurmaDTO::new).collect(Collectors.toList());
     }
 
     public Turma findByIdAndLoggedInUserUniversity(Long turmaId) {

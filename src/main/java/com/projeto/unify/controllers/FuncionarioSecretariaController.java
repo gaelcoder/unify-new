@@ -12,6 +12,7 @@ import com.projeto.unify.models.Professor;
 import com.projeto.unify.services.AlunoService;
 import com.projeto.unify.dtos.SecretariaDashboardStatsDTO;
 import com.projeto.unify.dtos.TurmaCreateDTO;
+import com.projeto.unify.dtos.TurmaDTO;
 import com.projeto.unify.models.Turma;
 import com.projeto.unify.services.ProfessorService;
 import com.projeto.unify.services.TurmaService;
@@ -174,7 +175,7 @@ public class FuncionarioSecretariaController {
     }
 
     @GetMapping("/turmas")
-    public ResponseEntity<List<Turma>> findAllTurmas() {
+    public ResponseEntity<List<TurmaDTO>> findAllTurmas() {
         return ResponseEntity.ok(turmaService.findAllByLoggedInUserUniversity());
     }
 
