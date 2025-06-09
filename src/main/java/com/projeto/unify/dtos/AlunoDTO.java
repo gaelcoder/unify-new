@@ -32,16 +32,11 @@ public class AlunoDTO {
     @NotBlank(message = "Telefone é obrigatório")
     private String telefone;
 
-    // O campo 'endereco' foi removido pois não existe na entidade Pessoa/Aluno.
+    private String campus;
 
-    @NotNull(message = "ID da Graduação é obrigatório") // Graduacao é obrigatória
+    @NotNull(message = "ID da Graduação é obrigatório") 
     private Long graduacaoId;
 
-    private Long universidadeId; // Opcional: usado se o criador não for funcionário com universidade associada
-
-    // Campos como 'turmaId', 'curso', 'cr' foram intencionalmente omitidos:
-    // - 'turmaId': Associação com Turma será posterior.
-    // - 'curso': Coberto pela Graduacao.
-    // - 'cr': Será inicializado como 0 e calculado posteriormente.
+    private Long universidadeId; 
 
 }

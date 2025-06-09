@@ -30,6 +30,7 @@ public class UniversidadeService {
     private final UsuarioService usuarioService;
     private final FileService fileService;
     private final FuncionarioRepository funcionarioRepository;
+    private final AlunoRepository alunoRepository;
 
     @Transactional
     public Universidade criar(UniversidadeDTO dto, MultipartFile logoFile) {
@@ -328,8 +329,7 @@ public class UniversidadeService {
 
         int campusCount = universidadeCompleta.getCampus() != null ? universidadeCompleta.getCampus().size() : 0;
         long funcionariosCount = funcionarioRepository.countByUniversidadeId(universidadeCompleta.getId());
-        long alunosCount = 0; // Placeholder - Implement when Aluno entity and repository are available
-        // alunosCount = alunoRepository.countByUniversidadeId(universidadeCompleta.getId());
+        long alunosCount = alunoRepository.countByUniversidadeId(universidadeCompleta.getId());
 
         return new UniversidadeStatsDTO(
             universidadeCompleta.getNome(),

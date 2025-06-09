@@ -75,6 +75,14 @@ public class AlunoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A Graduação especificada não pertence à universidade do aluno.");
         }
 
+        if (dto.getCampus() == null || dto.getCampus().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campus é obrigatório.");
+        }
+
+        if (!graduacao.getCampusDisponiveis().contains(dto.getCampus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campus '" + dto.getCampus() + "' não está disponível para a graduação '" + graduacao.getTitulo() + "'.");
+        }
+
         // CPF Validation
         if (dto.getCpf() != null && !dto.getCpf().isBlank()) {
             if (alunoRepository.existsByCpf(dto.getCpf()) ||
@@ -134,6 +142,7 @@ public class AlunoService {
         aluno.setUniversidade(universidadeDoAluno);
         aluno.setUsuario(usuarioSalvo);
         aluno.setGraduacao(graduacao);
+        aluno.setCampus(dto.getCampus());
 
         Aluno alunoSalvo = alunoRepository.save(aluno);
 
@@ -224,11 +233,23 @@ public class AlunoService {
             if (!novaGraduacao.getUniversidade().equals(uniFuncionario)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nova graduação especificada não pertence à sua universidade.");
             }
-            // TODO: Consider implications of changing graduacao (CR, turmas matriculadas, etc.)
-            // For now, direct update. Matricula is NOT re-generated.
             aluno.setGraduacao(novaGraduacao);
+            if (dto.getCampus() != null && !dto.getCampus().isBlank()) {
+                if (novaGraduacao.getCampusDisponiveis().contains(dto.getCampus())) {
+                    aluno.setCampus(dto.getCampus());
+                } else {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campus '" + dto.getCampus() + "' não está disponível para a nova graduação.");
+                }
+            } else {
+                aluno.setCampus(null);
+            }
+        } else if (dto.getCampus() != null && !dto.getCampus().equals(aluno.getCampus())) {
+            if (aluno.getGraduacao().getCampusDisponiveis().contains(dto.getCampus())) {
+                aluno.setCampus(dto.getCampus());
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campus '" + dto.getCampus() + "' não está disponível para a graduação atual.");
+            }
         }
-        // CR is calculated, not set directly here. Turma association is separate.
 
         return alunoRepository.save(aluno);
     }

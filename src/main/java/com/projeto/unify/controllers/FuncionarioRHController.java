@@ -39,6 +39,24 @@ public class FuncionarioRHController {
         return ResponseEntity.ok(professores);
     }
 
+    @GetMapping("/professores/{id}")
+    public ResponseEntity<Professor> buscarProfessorDaUniversidadePorId(@PathVariable Long id) {
+        Professor professor = professorService.buscarPorIdEUniversidadeDoUsuarioLogado(id);
+        return ResponseEntity.ok(professor);
+    }
+
+    @PutMapping("/professores/{id}")
+    public ResponseEntity<Professor> atualizarProfessorDaUniversidade(@PathVariable Long id, @Valid @RequestBody ProfessorDTO professorDTO) {
+        Professor professorAtualizado = professorService.atualizarProfessor(id, professorDTO);
+        return ResponseEntity.ok(professorAtualizado);
+    }
+
+    @DeleteMapping("/professores/{id}")
+    public ResponseEntity<Void> deletarProfessorDaUniversidade(@PathVariable Long id) {
+        professorService.deletarProfessor(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // Funcionario Endpoints for RH Universidade
     @PostMapping("/funcionarios/")
     public ResponseEntity<Funcionario> criarFuncionario(@Valid @RequestBody FuncionarioDTO funcionarioDTO) {

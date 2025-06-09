@@ -32,6 +32,9 @@ public class Aluno extends Pessoa {
     @Column
     private float cr;
 
+    @Column
+    private String campus;
+
     @ManyToOne
     @JoinColumn(name = "turma_id")
     @JsonBackReference("turma-alunos")
@@ -51,13 +54,14 @@ public class Aluno extends Pessoa {
     private Usuario usuario;
 
 
-    public Aluno(String cpf, LocalDate dataNasc, String nome, String sobrenome, Graduacao graduacao, String email, String telefone, String matricula, float cr) {
+    public Aluno(String cpf, LocalDate dataNasc, String nome, String sobrenome, Graduacao graduacao, String email, String telefone, String matricula, float cr, String campus) {
         super(cpf, dataNasc, nome, sobrenome);
         this.graduacao = graduacao;
         this.email = email;
         this.telefone = telefone;
         this.matricula = matricula;
         this.cr = 0;
+        this.campus = campus;
     }
 
 }

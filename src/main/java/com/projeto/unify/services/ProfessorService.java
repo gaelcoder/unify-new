@@ -249,6 +249,12 @@ public class ProfessorService {
     }
 
     @Transactional(readOnly = true)
+    public Professor buscarPorIdEUniversidadeDoUsuarioLogado(Long id) {
+        Universidade universidade = getUniversidadeDoFuncionarioRHLogado();
+        return professorRepository.findByIdAndUniversidade(id, universidade)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado ou não pertence à sua universidade."));
+    }
+
     public Professor buscarProfessorPorId(Long id) {
         return professorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado com o ID: " + id));

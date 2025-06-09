@@ -26,6 +26,7 @@ public interface AlunoRepository extends JpaRepository<Aluno, Long> {
     // Methods for FuncionarioSecretaria CRUD
     List<Aluno> findByUniversidade(Universidade universidade);
     Optional<Aluno> findByIdAndUniversidade(Long id, Universidade universidade);
+    long countByUniversidadeId(Long universidadeId);
 
     // Methods for conflict checking during updates
     boolean existsByEmailAndIdNot(String email, Long id);
