@@ -6,13 +6,15 @@ import com.projeto.unify.services.GraduacaoService;
 import com.projeto.unify.dtos.MateriaDTO;
 import com.projeto.unify.models.Materia;
 import com.projeto.unify.services.MateriaService;
-import com.projeto.unify.dtos.TurmaDTO;
-import com.projeto.unify.models.Turma;
-import com.projeto.unify.services.TurmaService;
 import com.projeto.unify.dtos.AlunoDTO;
 import com.projeto.unify.models.Aluno;
+import com.projeto.unify.models.Professor;
 import com.projeto.unify.services.AlunoService;
 import com.projeto.unify.dtos.SecretariaDashboardStatsDTO;
+import com.projeto.unify.dtos.TurmaCreateDTO;
+import com.projeto.unify.models.Turma;
+import com.projeto.unify.services.ProfessorService;
+import com.projeto.unify.services.TurmaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,10 +34,11 @@ import java.util.List;
 public class FuncionarioSecretariaController {
 
     private static final Logger logger = LoggerFactory.getLogger(FuncionarioSecretariaController.class);
+    private final AlunoService alunoService;
     private final GraduacaoService graduacaoService;
     private final MateriaService materiaService;
     private final TurmaService turmaService;
-    private final AlunoService alunoService;
+    private final ProfessorService professorService;
 
     // --- Dashboard Stats Endpoint ---
     @GetMapping("/dashboard/stats")
@@ -44,6 +47,13 @@ public class FuncionarioSecretariaController {
         // For now, returning dummy data
         SecretariaDashboardStatsDTO stats = new SecretariaDashboardStatsDTO(0L, 0L);
         return ResponseEntity.ok(stats);
+    }
+
+    // --- Professor Endpoints ---
+    @GetMapping("/professores")
+    public ResponseEntity<List<Professor>> listarProfessores() {
+        List<Professor> professores = professorService.listarTodosPorUniversidadeDoUsuarioLogado();
+        return ResponseEntity.ok(professores);
     }
 
     // --- Graduacao CRUD Endpoints ---
@@ -110,36 +120,9 @@ public class FuncionarioSecretariaController {
         return ResponseEntity.noContent().build();
     }
 
-    // --- Turma CRUD Endpoints ---
-
-    @PostMapping("/turmas")
-    public ResponseEntity<Turma> criarTurma(@Valid @RequestBody TurmaDTO turmaDTO) {
-        Turma novaTurma = turmaService.criar(turmaDTO);
-        return new ResponseEntity<>(novaTurma, HttpStatus.CREATED);
-    }
-
-    @GetMapping("/turmas")
-    public ResponseEntity<List<Turma>> listarTurmas() {
-        List<Turma> turmas = turmaService.listarTurmasPorUniversidadeDoFuncionarioLogado();
-        return ResponseEntity.ok(turmas);
-    }
-
-    @GetMapping("/turmas/{id}")
-    public ResponseEntity<Turma> buscarTurmaPorId(@PathVariable Long id) {
-        Turma turma = turmaService.buscarTurmaPorIdEUniversidadeDoFuncionarioLogado(id);
-        return ResponseEntity.ok(turma);
-    }
-
-    @PutMapping("/turmas/{id}")
-    public ResponseEntity<Turma> atualizarTurma(@PathVariable Long id, @Valid @RequestBody TurmaDTO turmaDTO) {
-        Turma turmaAtualizada = turmaService.atualizar(id, turmaDTO);
-        return ResponseEntity.ok(turmaAtualizada);
-    }
-
-    @DeleteMapping("/turmas/{id}")
-    public ResponseEntity<Void> deletarTurma(@PathVariable Long id) {
-        turmaService.deletar(id);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/materias/{materiaId}/campuses")
+    public ResponseEntity<List<String>> getCampusesForMateria(@PathVariable Long materiaId) {
+        return ResponseEntity.ok(graduacaoService.findCampusesByMateriaId(materiaId));
     }
 
     // --- Aluno CRUD Endpoints ---
@@ -153,10 +136,6 @@ public class FuncionarioSecretariaController {
     @GetMapping("/alunos")
     public ResponseEntity<List<Aluno>> listarAlunos() {
         List<Aluno> alunos = alunoService.listarPorUniversidadeDoFuncionarioLogado();
-        logger.info("Retornando lista de alunos. Quantidade: {}", alunos != null ? alunos.size() : "null");
-        if (alunos != null && alunos.isEmpty()) {
-            logger.info("A lista de alunos está vazia.");
-        }
         return ResponseEntity.ok(alunos);
     }
 
@@ -175,6 +154,38 @@ public class FuncionarioSecretariaController {
     @DeleteMapping("/alunos/{id}")
     public ResponseEntity<Void> deletarAluno(@PathVariable Long id) {
         alunoService.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // --- Turma Endpoints ---
+
+    @PostMapping("/turmas")
+    public ResponseEntity<Turma> createTurma(@Valid @RequestBody TurmaCreateDTO turmaCreateDTO) {
+        Turma novaTurma = turmaService.create(turmaCreateDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(novaTurma);
+    }
+
+    @GetMapping("/turmas/alunos-elegiveis")
+    public ResponseEntity<List<Aluno>> getAlunosElegiveis(
+            @RequestParam String campus,
+            @RequestParam Long materiaId) {
+        List<Aluno> alunos = turmaService.findEligibleStudents(campus, materiaId);
+        return ResponseEntity.ok(alunos);
+    }
+
+    @GetMapping("/turmas")
+    public ResponseEntity<List<Turma>> findAllTurmas() {
+        return ResponseEntity.ok(turmaService.findAllByLoggedInUserUniversity());
+    }
+
+    @GetMapping("/turmas/{id}")
+    public ResponseEntity<Turma> findTurmaById(@PathVariable Long id) {
+        return ResponseEntity.ok(turmaService.findByIdAndLoggedInUserUniversity(id));
+    }
+
+    @DeleteMapping("/turmas/{id}")
+    public ResponseEntity<Void> deleteTurma(@PathVariable Long id) {
+        turmaService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

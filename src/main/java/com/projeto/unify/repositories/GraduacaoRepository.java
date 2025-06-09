@@ -18,4 +18,11 @@ public interface GraduacaoRepository extends JpaRepository<Graduacao, Long> {
 
     @Query("SELECT DISTINCT g.coordenadorDoCurso.id FROM Graduacao g WHERE g.universidade.id = :universidadeId AND g.coordenadorDoCurso IS NOT NULL")
     List<Long> findDistinctCoordenadorDoCursoIdByUniversidadeId(@Param("universidadeId") Long universidadeId);
+
+    Optional<Graduacao> findByTitulo(String titulo);
+    List<Graduacao> findByUniversidadeId(Long universidadeId);
+    Optional<Graduacao> findByIdAndUniversidadeId(Long id, Long universidadeId);
+
+    @Query("SELECT DISTINCT g.campusDisponiveis FROM Graduacao g JOIN g.materias m WHERE m.id = :materiaId")
+    List<String> findCampusesByMateriaId(@Param("materiaId") Long materiaId);
 }

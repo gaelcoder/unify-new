@@ -137,4 +137,9 @@ public class GraduacaoService {
         Graduacao graduacao = buscarPorId(id); // Ensures it exists and user has access
         graduacaoRepository.delete(graduacao);
     }
+
+    @Transactional(readOnly = true)
+    public List<String> findCampusesByMateriaId(Long materiaId) {
+        return graduacaoRepository.findCampusesByMateriaId(materiaId);
+    }
 } 

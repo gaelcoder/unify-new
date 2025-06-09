@@ -223,8 +223,8 @@ public class ProfessorService {
         return UUID.randomUUID().toString().substring(0, 8);
     }
 
-    // Helper method to get the University of the currently logged-in RH Funcionario
-    private Universidade getUniversidadeDoFuncionarioRHLogado() {
+    // Helper method to get the University of the currently logged-in Funcionario
+    private Universidade getUniversidadeDoFuncionarioLogado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String emailUsuarioLogado = authentication.getName();
         Usuario usuarioLogado = usuarioService.findByEmail(emailUsuarioLogado);
@@ -244,15 +244,15 @@ public class ProfessorService {
 
     @Transactional(readOnly = true)
     public List<Professor> listarTodosPorUniversidadeDoUsuarioLogado() {
-        Universidade universidadeDoRH = getUniversidadeDoFuncionarioRHLogado();
-        return professorRepository.findByUniversidadeId(universidadeDoRH.getId());
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        return professorRepository.findByUniversidadeId(universidade.getId());
     }
 
     @Transactional(readOnly = true)
     public Professor buscarPorIdEUniversidadeDoUsuarioLogado(Long id) {
-        Universidade universidade = getUniversidadeDoFuncionarioRHLogado();
-        return professorRepository.findByIdAndUniversidade(id, universidade)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado ou não pertence à sua universidade."));
+        Universidade universidadeDoUsuario = getUniversidadeDoFuncionarioLogado();
+        return professorRepository.findByIdAndUniversidade(id, universidadeDoUsuario)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado nesta universidade."));
     }
 
     public Professor buscarProfessorPorId(Long id) {

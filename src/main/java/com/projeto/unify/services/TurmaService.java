@@ -1,6 +1,6 @@
 package com.projeto.unify.services;
 
-import com.projeto.unify.dtos.TurmaDTO;
+import com.projeto.unify.dtos.TurmaCreateDTO;
 import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.*;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -20,9 +22,9 @@ public class TurmaService {
     private final TurmaRepository turmaRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final UsuarioService usuarioService;
-    private final GraduacaoRepository graduacaoRepository;
     private final MateriaRepository materiaRepository;
     private final ProfessorRepository professorRepository;
+    private final AlunoRepository alunoRepository;
 
     private Universidade getUniversidadeDoFuncionarioLogado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -37,101 +39,82 @@ public class TurmaService {
     }
 
     @Transactional
-    public Turma criar(TurmaDTO dto) {
-        Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
+    public Turma create(TurmaCreateDTO dto) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
 
-        Graduacao graduacao = graduacaoRepository.findById(dto.getGraduacaoId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Graduação com ID " + dto.getGraduacaoId() + " não encontrada."));
-        if (!graduacao.getUniversidade().equals(uniFuncionario)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Graduação especificada não pertence à sua universidade.");
+        Professor professor = professorRepository.findById(dto.getProfessorId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado."));
+        if (!Objects.equals(professor.getUniversidade().getId(), universidade.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professor não pertence à sua universidade.");
+        }
+
+        boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurno(professor, dto.getTurno().toUpperCase());
+        if (professorJaTemTurmaNoTurno) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Professor " + professor.getNome() + " já leciona uma turma no turno da " + dto.getTurno() + ".");
         }
 
         Materia materia = materiaRepository.findById(dto.getMateriaId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria com ID " + dto.getMateriaId() + " não encontrada."));
-        // Ensure the Materia is part of the chosen Graduacao
-        if (materia.getGraduacoes() == null || !materia.getGraduacoes().contains(graduacao)) {
-             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Matéria " + materia.getTitulo() + " não está associada à graduação " + graduacao.getTitulo() + ".");
-        }
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada."));
 
-        Professor professor = null;
-        if (dto.getProfessorId() != null) {
-            professor = professorRepository.findById(dto.getProfessorId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor com ID " + dto.getProfessorId() + " não encontrado."));
-            if (!professor.getUniversidade().equals(uniFuncionario)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professor especificado não pertence à sua universidade.");
-            }
+        if (!universidade.getCampus().contains(dto.getCampus())) {
+             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campus '" + dto.getCampus() + "' não pertence a esta universidade.");
         }
-
-        // TODO: Add validation for unique Turma (e.g., based on materia, graduacao, turno, ano/semestre - if those fields are added)
 
         Turma turma = new Turma();
-        turma.setGraduacao(graduacao);
-        turma.setMateria(materia);
         turma.setProfessor(professor);
+        turma.setMateria(materia);
         turma.setTurno(dto.getTurno().toUpperCase());
+        turma.setCampus(dto.getCampus());
         turma.setLimiteAlunos(dto.getLimiteAlunos());
+
+        if (dto.getAlunoIds() != null && !dto.getAlunoIds().isEmpty()) {
+            if (dto.getAlunoIds().size() > dto.getLimiteAlunos()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Número de alunos excede o limite da turma.");
+            }
+            List<Aluno> alunos = alunoRepository.findAllById(dto.getAlunoIds());
+            for (Aluno aluno : alunos) {
+                if (!aluno.getUniversidade().equals(universidade)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno " + aluno.getNome() + " (ID: " + aluno.getId() + ") não pertence à sua universidade.");
+                }
+            }
+            turma.setAlunos(new ArrayList<>(alunos));
+        }
 
         return turmaRepository.save(turma);
     }
 
-    public List<Turma> listarTurmasPorUniversidadeDoFuncionarioLogado() {
-        Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
-        return turmaRepository.findByGraduacao_Universidade(uniFuncionario);
+    @Transactional(readOnly = true)
+    public List<Aluno> findEligibleStudents(String campus, Long materiaId) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        Materia materia = materiaRepository.findById(materiaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada."));
+
+        boolean materiaPertenceUniversidade = materia.getGraduacoes().stream()
+                .anyMatch(graduacao -> graduacao.getUniversidade().equals(universidade));
+        if (!materiaPertenceUniversidade) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Matéria não pertence à sua universidade.");
+        }
+
+        return alunoRepository.findAlunosElegiveisParaTurma(universidade.getId(), campus, materiaId);
     }
 
-    public Turma buscarTurmaPorIdEUniversidadeDoFuncionarioLogado(Long turmaId) {
+    public List<Turma> findAllByLoggedInUserUniversity() {
         Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
-        return turmaRepository.findByIdAndGraduacao_Universidade(turmaId, uniFuncionario)
+        return turmaRepository.findByProfessor_Universidade(uniFuncionario);
+    }
+
+    public Turma findByIdAndLoggedInUserUniversity(Long turmaId) {
+        Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
+        return turmaRepository.findByIdAndProfessor_Universidade(turmaId, uniFuncionario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turma não encontrada ou não pertence à sua universidade."));
     }
 
-    @Transactional
-    public Turma atualizar(Long turmaId, TurmaDTO dto) {
-        Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
-        Turma turma = turmaRepository.findByIdAndGraduacao_Universidade(turmaId, uniFuncionario)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turma não encontrada ou não pertence à sua universidade para atualização."));
-
-        // Validate Graduacao for the turma (usually fixed, but if DTO allows change, re-validate)
-        Graduacao graduacao = graduacaoRepository.findById(dto.getGraduacaoId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Graduação com ID " + dto.getGraduacaoId() + " não encontrada."));
-        if (!graduacao.getUniversidade().equals(uniFuncionario)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nova graduação especificada não pertence à sua universidade.");
-        }
-        // If graduacao itself changes, it might have implications for existing students - not handled here.
-
-        Materia materia = materiaRepository.findById(dto.getMateriaId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria com ID " + dto.getMateriaId() + " não encontrada."));
-        if (materia.getGraduacoes() == null || !materia.getGraduacoes().contains(graduacao)) {
-             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nova matéria " + materia.getTitulo() + " não está associada à graduação " + graduacao.getTitulo() + ".");
-        }
-
-        Professor professor = null;
-        if (dto.getProfessorId() != null) {
-            professor = professorRepository.findById(dto.getProfessorId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor com ID " + dto.getProfessorId() + " não encontrado."));
-            if (!professor.getUniversidade().equals(uniFuncionario)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Novo professor especificado não pertence à sua universidade.");
-            }
-        }
-
-        turma.setGraduacao(graduacao);
-        turma.setMateria(materia);
-        turma.setProfessor(professor);
-        turma.setTurno(dto.getTurno().toUpperCase());
-        turma.setLimiteAlunos(dto.getLimiteAlunos());
-
-        return turmaRepository.save(turma);
-    }
 
     @Transactional
-    public void deletar(Long turmaId) {
-        Turma turma = buscarTurmaPorIdEUniversidadeDoFuncionarioLogado(turmaId); // Ensures it belongs to the secretary's university
-
-        if (!turma.getAlunos().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Turma não pode ser deletada pois possui alunos matriculados.");
-        }
-        // Add other checks if needed, e.g., active period.
-
+    public void delete(Long turmaId) {
+        Turma turma = findByIdAndLoggedInUserUniversity(turmaId);
+        turma.getAlunos().clear();
         turmaRepository.delete(turma);
     }
 } 

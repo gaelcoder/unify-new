@@ -189,16 +189,16 @@ public class AlunoService {
         return alunoRepository.findByUniversidade(universidade);
     }
 
-    public Aluno buscarPorIdEUniversidadeDoFuncionarioLogado(Long alunoId) {
+    public Aluno buscarPorIdEUniversidadeDoFuncionarioLogado(Long id) {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
-        return alunoRepository.findByIdAndUniversidade(alunoId, universidade)
+        return alunoRepository.findByIdAndUniversidade(id, universidade)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado ou não pertence à sua universidade."));
     }
 
     @Transactional
-    public Aluno atualizar(Long alunoId, AlunoDTO dto) {
-        Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
-        Aluno aluno = alunoRepository.findByIdAndUniversidade(alunoId, uniFuncionario)
+    public Aluno atualizar(Long id, AlunoDTO dto) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        Aluno aluno = alunoRepository.findByIdAndUniversidade(id, universidade)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado ou não pertence à sua universidade para atualização."));
 
         // Basic field updates
@@ -230,7 +230,7 @@ public class AlunoService {
         if (dto.getGraduacaoId() != null && (aluno.getGraduacao() == null || !aluno.getGraduacao().getId().equals(dto.getGraduacaoId()))) {
             Graduacao novaGraduacao = graduacaoRepository.findById(dto.getGraduacaoId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nova graduação com ID " + dto.getGraduacaoId() + " não encontrada."));
-            if (!novaGraduacao.getUniversidade().equals(uniFuncionario)) {
+            if (!novaGraduacao.getUniversidade().equals(universidade)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nova graduação especificada não pertence à sua universidade.");
             }
             aluno.setGraduacao(novaGraduacao);

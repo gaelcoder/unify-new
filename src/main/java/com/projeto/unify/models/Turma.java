@@ -38,15 +38,19 @@ public class Turma {
     private String turno;
 
     @Column(nullable = false)
+    @NotBlank(message = "O campus é obrigatório")
+    private String campus;
+
+    @Column(nullable = false)
     @Min(value = 1, message = "O limite de alunos deve ser pelo menos 1")
     private int limiteAlunos;
 
-    @ManyToOne
-    @JoinColumn(name = "graduacao_id", nullable = false)
-    private Graduacao graduacao;
-
-    @OneToMany(mappedBy = "turma", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference("turma-alunos")
+    @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinTable(
+        name = "turma_aluno",
+        joinColumns = @JoinColumn(name = "turma_id"),
+        inverseJoinColumns = @JoinColumn(name = "aluno_id")
+    )
     private List<Aluno> alunos = new ArrayList<>();
 
     public Turma(Materia materia, String turno, int limiteAlunos) {

@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.projeto.unify.dtos.UniversidadeStatsDTO;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -130,8 +131,13 @@ public class UniversidadeService {
                             HttpStatus.NOT_FOUND, "Universidade não encontrada");
                 });
         // Initialize the campus collection to ensure it's loaded
-        if (universidade != null && universidade.getCampus() != null) {
+        if (universidade.getCampus() != null) {
             universidade.getCampus().size(); // Accessing the collection
+        }
+        // Initialize the representante to prevent lazy loading issues
+        if (universidade.getRepresentante() != null) {
+            // Access a property to trigger lazy loading
+            universidade.getRepresentante().getNome();
         }
         return universidade;
     }
@@ -343,5 +349,35 @@ public class UniversidadeService {
     @Transactional(readOnly = true)
     public long countTotalUniversidades() {
         return universidadeRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public Universidade findMyUniversity() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Usuario usuario = usuarioService.findByEmail(email);
+
+        return usuario.getPerfis().stream()
+                .findFirst()
+                .flatMap(perfil -> {
+                    switch (perfil.getNome()) {
+                        case ROLE_FUNCIONARIO:
+                        case ROLE_FUNCIONARIO_RH:
+                            return funcionarioRepository.findByUsuarioId(usuario.getId())
+                                    .map(Funcionario::getUniversidade);
+                        case ROLE_ALUNO:
+                            return alunoRepository.findByUsuario(usuario)
+                                    .map(Aluno::getUniversidade);
+                        case ROLE_PROFESSOR:
+                            // Professor logic to be implemented
+                            return Optional.empty();
+                        case ROLE_ADMIN_UNIVERSIDADE:
+                            return representanteRepository.findByUsuarioId(usuario.getId())
+                                    .map(Representante::getUniversidade);
+                        default:
+                            return Optional.empty();
+                    }
+                })
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Universidade não encontrada para o usuário ou perfil não mapeado."));
     }
 }
