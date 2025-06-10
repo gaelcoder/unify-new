@@ -92,36 +92,33 @@ public class TurmaService {
     @Transactional
     public TurmaDTO update(Long turmaId, TurmaUpdateDTO dto) {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
-        Turma turma = findById(turmaId);
+        Turma turma = this.findByIdAndLoggedInUserUniversity(turmaId);
 
-        if (dto.getProfessorId() != null) {
-            Professor professor = professorRepository.findById(dto.getProfessorId())
+        if (dto.getProfessorId() != null && !dto.getProfessorId().equals(turma.getProfessor().getId())) {
+            Professor novoProfessor = professorRepository.findById(dto.getProfessorId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado."));
-            if (!Objects.equals(professor.getUniversidade().getId(), universidade.getId())) {
+            if (!Objects.equals(novoProfessor.getUniversidade().getId(), universidade.getId())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professor não pertence à sua universidade.");
             }
-            if (!turma.getProfessor().getId().equals(dto.getProfessorId())) {
-                boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurno(professor, turma.getTurno());
-                if (professorJaTemTurmaNoTurno) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "Professor " + professor.getNome() + " já leciona uma turma no turno da " + turma.getTurno() + ".");
-                }
-                turma.setProfessor(professor);
+            boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurno(novoProfessor, turma.getTurno());
+            if (professorJaTemTurmaNoTurno) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Professor " + novoProfessor.getNome() + " já leciona outra turma no turno da " + turma.getTurno() + ".");
             }
+            turma.setProfessor(novoProfessor);
         }
 
         if (dto.getAlunoIds() != null) {
             if (dto.getAlunoIds().size() > turma.getLimiteAlunos()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Número de alunos excede o limite da turma.");
             }
-            List<Aluno> alunos = alunoRepository.findAllById(dto.getAlunoIds());
-            for (Aluno aluno : alunos) {
+            List<Aluno> novosAlunos = alunoRepository.findAllById(dto.getAlunoIds());
+            novosAlunos.forEach(aluno -> {
                 if (!aluno.getUniversidade().getId().equals(universidade.getId())) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno " + aluno.getNome() + " (ID: " + aluno.getId() + ") não pertence à sua universidade.");
+                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno " + aluno.getNome() + " (ID: " + aluno.getId() + ") não pertence à sua universidade.");
                 }
-            }
-            turma.getAlunos().clear();
-            turma.getAlunos().addAll(alunos);
+            });
+            turma.setAlunos(new ArrayList<>(novosAlunos));
         }
 
         Turma turmaAtualizada = turmaRepository.save(turma);
