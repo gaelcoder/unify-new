@@ -51,10 +51,10 @@ public class TurmaService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professor não pertence à sua universidade.");
         }
 
-        boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurno(professor, dto.getTurno().toUpperCase());
+        boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurnoAndDiaSemana(professor, dto.getTurno().toUpperCase(), dto.getDiaSemana().toUpperCase());
         if (professorJaTemTurmaNoTurno) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Professor " + professor.getNome() + " já leciona uma turma no turno da " + dto.getTurno() + ".");
+                    "Professor " + professor.getNome() + " já leciona uma turma no turno da " + dto.getTurno() + " na " + dto.getDiaSemana() + ".");
         }
 
         Materia materia = materiaRepository.findById(dto.getMateriaId())
@@ -68,6 +68,7 @@ public class TurmaService {
         turma.setProfessor(professor);
         turma.setMateria(materia);
         turma.setTurno(dto.getTurno().toUpperCase());
+        turma.setDiaSemana(dto.getDiaSemana().toUpperCase());
         turma.setCampus(dto.getCampus());
         turma.setLimiteAlunos(dto.getLimiteAlunos());
 
@@ -100,10 +101,10 @@ public class TurmaService {
             if (!Objects.equals(novoProfessor.getUniversidade().getId(), universidade.getId())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professor não pertence à sua universidade.");
             }
-            boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurno(novoProfessor, turma.getTurno());
+            boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurnoAndDiaSemana(novoProfessor, turma.getTurno(), turma.getDiaSemana());
             if (professorJaTemTurmaNoTurno) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Professor " + novoProfessor.getNome() + " já leciona outra turma no turno da " + turma.getTurno() + ".");
+                        "Professor " + novoProfessor.getNome() + " já leciona outra turma no turno da " + turma.getTurno() + " na " + turma.getDiaSemana() + ".");
             }
             turma.setProfessor(novoProfessor);
         }

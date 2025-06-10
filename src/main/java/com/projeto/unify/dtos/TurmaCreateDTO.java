@@ -17,6 +17,9 @@ public class TurmaCreateDTO {
     @Pattern(regexp = "^(MANHA|TARDE|NOITE)$", message = "Turno deve ser MANHA, TARDE ou NOITE")
     private String turno;
 
+    @NotBlank(message = "Dia da Semana é obrigatório")
+    private String diaSemana;
+
     @NotBlank(message = "Campus é obrigatório")
     private String campus;
 

@@ -16,6 +16,7 @@ public class TurmaDTO {
     private Materia materia;
     private Professor professor;
     private String turno;
+    private String diaSemana;
     private String campus;
     private int limiteAlunos;
     private List<Aluno> alunos;
@@ -25,6 +26,7 @@ public class TurmaDTO {
         this.materia = turma.getMateria();
         this.professor = turma.getProfessor();
         this.turno = turma.getTurno();
+        this.diaSemana = turma.getDiaSemana();
         this.campus = turma.getCampus();
         this.limiteAlunos = turma.getLimiteAlunos();
         this.alunos = turma.getAlunos();

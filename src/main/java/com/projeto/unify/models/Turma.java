@@ -38,6 +38,11 @@ public class Turma {
     private String turno;
 
     @Column(nullable = false)
+    @NotBlank(message = "O dia da semana é obrigatório")
+    @Pattern(regexp = "^(SEGUNDA|TERCA|QUARTA|QUINTA|SEXTA)$", message = "Dia da semana deve ser SEGUNDA, TERCA, QUARTA, QUINTA ou SEXTA")
+    private String diaSemana;
+
+    @Column(nullable = false)
     @NotBlank(message = "O campus é obrigatório")
     private String campus;
 
