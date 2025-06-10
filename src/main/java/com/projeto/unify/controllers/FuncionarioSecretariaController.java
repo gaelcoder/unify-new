@@ -13,6 +13,7 @@ import com.projeto.unify.services.AlunoService;
 import com.projeto.unify.dtos.SecretariaDashboardStatsDTO;
 import com.projeto.unify.dtos.TurmaCreateDTO;
 import com.projeto.unify.dtos.TurmaDTO;
+import com.projeto.unify.dtos.TurmaUpdateDTO;
 import com.projeto.unify.models.Turma;
 import com.projeto.unify.services.ProfessorService;
 import com.projeto.unify.services.TurmaService;
@@ -161,9 +162,15 @@ public class FuncionarioSecretariaController {
     // --- Turma Endpoints ---
 
     @PostMapping("/turmas")
-    public ResponseEntity<Turma> createTurma(@Valid @RequestBody TurmaCreateDTO turmaCreateDTO) {
+    public ResponseEntity<TurmaDTO> createTurma(@Valid @RequestBody TurmaCreateDTO turmaCreateDTO) {
         Turma novaTurma = turmaService.create(turmaCreateDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(novaTurma);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new TurmaDTO(novaTurma));
+    }
+
+    @PutMapping("/turmas/{id}")
+    public ResponseEntity<TurmaDTO> updateTurma(@PathVariable Long id, @Valid @RequestBody TurmaUpdateDTO turmaUpdateDTO) {
+        TurmaDTO turmaAtualizada = turmaService.update(id, turmaUpdateDTO);
+        return ResponseEntity.ok(turmaAtualizada);
     }
 
     @GetMapping("/turmas/alunos-elegiveis")
@@ -180,8 +187,8 @@ public class FuncionarioSecretariaController {
     }
 
     @GetMapping("/turmas/{id}")
-    public ResponseEntity<Turma> findTurmaById(@PathVariable Long id) {
-        return ResponseEntity.ok(turmaService.findByIdAndLoggedInUserUniversity(id));
+    public ResponseEntity<TurmaDTO> findTurmaById(@PathVariable Long id) {
+        return ResponseEntity.ok(turmaService.findTurmaById(id));
     }
 
     @DeleteMapping("/turmas/{id}")

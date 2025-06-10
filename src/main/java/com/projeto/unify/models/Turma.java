@@ -22,11 +22,6 @@ public class Turma {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "graduacao_id", nullable = true)
-    @JsonBackReference("graduacao-turmas")
-    private Graduacao graduacao;
-
     @ManyToOne
     @JsonBackReference("professor-turmas")
     private Professor professor;
@@ -56,6 +51,7 @@ public class Turma {
         joinColumns = @JoinColumn(name = "turma_id"),
         inverseJoinColumns = @JoinColumn(name = "aluno_id")
     )
+    @JsonManagedReference("turma-alunos")
     private List<Aluno> alunos = new ArrayList<>();
 
     public Turma(Materia materia, String turno, int limiteAlunos) {

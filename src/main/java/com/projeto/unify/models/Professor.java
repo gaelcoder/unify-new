@@ -37,7 +37,6 @@ public class Professor extends Pessoa {
     private String telefone;
 
     @OneToMany(mappedBy = "professor", fetch = FetchType.LAZY)
-    @JsonManagedReference("professor-turmas")
     private Set<Turma> turmas = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

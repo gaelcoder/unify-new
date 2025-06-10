@@ -48,7 +48,7 @@ public class Materia {
             joinColumns = @JoinColumn(name = "materia_id"),
             inverseJoinColumns = @JoinColumn(name = "graduacao_id")
     )
-    @JsonIgnoreProperties({"materias", "alunos", "universidade", "coordenadorDoCurso", "campusDisponiveis", "hibernateLazyInitializer"})
+    @JsonManagedReference("materia-graduacoes")
     private Set<Graduacao> graduacoes = new HashSet<>();
 
     @OneToMany(mappedBy = "materia")

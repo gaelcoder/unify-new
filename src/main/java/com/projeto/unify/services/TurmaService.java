@@ -2,6 +2,7 @@ package com.projeto.unify.services;
 
 import com.projeto.unify.dtos.TurmaCreateDTO;
 import com.projeto.unify.dtos.TurmaDTO;
+import com.projeto.unify.dtos.TurmaUpdateDTO;
 import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.*;
 import lombok.RequiredArgsConstructor;
@@ -75,15 +76,56 @@ public class TurmaService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Número de alunos excede o limite da turma.");
             }
             List<Aluno> alunos = alunoRepository.findAllById(dto.getAlunoIds());
-            for (Aluno aluno : alunos) {
-                if (!aluno.getUniversidade().equals(universidade)) {
+            alunos.forEach(aluno -> {
+                if (!aluno.getUniversidade().getId().equals(universidade.getId())) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno " + aluno.getNome() + " (ID: " + aluno.getId() + ") não pertence à sua universidade.");
                 }
-            }
-            turma.setAlunos(new ArrayList<>(alunos));
+            });
+            turma.setAlunos(alunos);
+        } else {
+            turma.setAlunos(new ArrayList<>());
         }
 
         return turmaRepository.save(turma);
+    }
+
+    @Transactional
+    public TurmaDTO update(Long turmaId, TurmaUpdateDTO dto) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        Turma turma = findById(turmaId);
+
+        if (dto.getProfessorId() != null) {
+            Professor professor = professorRepository.findById(dto.getProfessorId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado."));
+            if (!Objects.equals(professor.getUniversidade().getId(), universidade.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professor não pertence à sua universidade.");
+            }
+            if (!turma.getProfessor().getId().equals(dto.getProfessorId())) {
+                boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurno(professor, turma.getTurno());
+                if (professorJaTemTurmaNoTurno) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Professor " + professor.getNome() + " já leciona uma turma no turno da " + turma.getTurno() + ".");
+                }
+                turma.setProfessor(professor);
+            }
+        }
+
+        if (dto.getAlunoIds() != null) {
+            if (dto.getAlunoIds().size() > turma.getLimiteAlunos()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Número de alunos excede o limite da turma.");
+            }
+            List<Aluno> alunos = alunoRepository.findAllById(dto.getAlunoIds());
+            for (Aluno aluno : alunos) {
+                if (!aluno.getUniversidade().getId().equals(universidade.getId())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno " + aluno.getNome() + " (ID: " + aluno.getId() + ") não pertence à sua universidade.");
+                }
+            }
+            turma.getAlunos().clear();
+            turma.getAlunos().addAll(alunos);
+        }
+
+        Turma turmaAtualizada = turmaRepository.save(turma);
+        return new TurmaDTO(turmaAtualizada);
     }
 
     @Transactional(readOnly = true)
@@ -103,8 +145,18 @@ public class TurmaService {
 
     public List<TurmaDTO> findAllByLoggedInUserUniversity() {
         Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
-        List<Turma> turmas = turmaRepository.findByProfessor_Universidade(uniFuncionario);
+        List<Turma> turmas = turmaRepository.findAllByProfessor_Universidade_Id(uniFuncionario.getId());
         return turmas.stream().map(TurmaDTO::new).collect(Collectors.toList());
+    }
+
+    public TurmaDTO findTurmaById(Long turmaId) {
+        Turma turma = findByIdAndLoggedInUserUniversity(turmaId);
+        return new TurmaDTO(turma);
+    }
+
+    private Turma findById(Long turmaId) {
+        return turmaRepository.findById(turmaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turma não encontrada."));
     }
 
     public Turma findByIdAndLoggedInUserUniversity(Long turmaId) {

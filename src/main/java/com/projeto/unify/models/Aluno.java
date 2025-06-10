@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -38,6 +39,7 @@ public class Aluno extends Pessoa {
     private String campus;
 
     @ManyToMany(mappedBy = "alunos")
+    @JsonBackReference("turma-alunos")
     private List<Turma> turmas = new ArrayList<>();
 
     @ManyToOne
@@ -47,6 +49,7 @@ public class Aluno extends Pessoa {
 
     @ManyToOne
     @JoinColumn(name = "graduacao_id")
+    @JsonBackReference("graduacao-alunos")
     private Graduacao graduacao;
 
     @OneToOne

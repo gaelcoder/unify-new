@@ -1,6 +1,6 @@
 package com.projeto.unify.models;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -41,24 +41,24 @@ public class Universidade {
     private List<String> campus = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
-    @JsonManagedReference("universidade-alunos")
+    @JsonIgnore
     private List<Aluno> alunos = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
-    @JsonManagedReference("universidade-funcionarios")
+    @JsonIgnore
     private List<Funcionario> funcionarios = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
-    @JsonManagedReference("universidade-professores")
+    @JsonIgnore
     private List<Professor> professores = new ArrayList<>();
 
     @OneToMany(mappedBy = "universidade", cascade = CascadeType.ALL)
-    @JsonManagedReference("universidade-graduacoes")
+    @JsonIgnore
     private List<Graduacao> graduacoes = new ArrayList<>();
 
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "representante_id")
-    @JsonManagedReference("universidade-representante")
+    @JsonIgnore
     private Representante representante;
 
 

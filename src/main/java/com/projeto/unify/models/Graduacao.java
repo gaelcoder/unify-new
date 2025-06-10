@@ -43,17 +43,12 @@ public class Graduacao {
     private Universidade universidade;
 
     @ManyToMany(mappedBy = "graduacoes")
-    @JsonIgnoreProperties("graduacoes")
+    @JsonBackReference("materia-graduacoes")
     private Set<Materia> materias = new HashSet<>();
 
     @OneToMany(mappedBy = "graduacao")
     @JsonManagedReference("graduacao-alunos")
-    @JsonIgnore
     private List<Aluno> alunos = new ArrayList<>();
-
-    @OneToMany(mappedBy = "graduacao")
-    @JsonManagedReference("graduacao-turmas")
-    private List<Turma> turmas = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "graduacao_campus_disponiveis", joinColumns = @JoinColumn(name = "graduacao_id"))
