@@ -9,9 +9,11 @@ import com.projeto.unify.models.Universidade;
 import com.projeto.unify.models.Usuario;
 import com.projeto.unify.models.Funcionario;
 import com.projeto.unify.models.Professor;
+import com.projeto.unify.models.Aluno;
 import com.projeto.unify.repositories.RepresentanteRepository;
 import com.projeto.unify.repositories.FuncionarioRepository;
 import com.projeto.unify.repositories.ProfessorRepository;
+import com.projeto.unify.repositories.AlunoRepository;
 import com.projeto.unify.security.JwtService;
 import com.projeto.unify.services.AuthService;
 import com.projeto.unify.services.UsuarioService;
@@ -43,6 +45,7 @@ public class AuthController {
     private final RepresentanteRepository representanteRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final ProfessorRepository professorRepository;
+    private final AlunoRepository alunoRepository;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
@@ -93,6 +96,17 @@ public class AuthController {
             if (professorOpt.isPresent()) {
                 Professor professor = professorOpt.get();
                 Universidade universidade = professor.getUniversidade();
+                if (universidade != null) {
+                    authResponseBuilder.universidadeId(universidade.getId());
+                    authResponseBuilder.universidadeNome(universidade.getNome());
+                    authResponseBuilder.universidadeLogoPath(universidade.getLogoPath());
+                }
+            }
+        } else if (tipo.contains(Perfil.TipoPerfil.ROLE_ALUNO.name())) {
+            Optional<Aluno> alunoOpt = alunoRepository.findByUsuario(usuario);
+            if (alunoOpt.isPresent()) {
+                Aluno aluno = alunoOpt.get();
+                Universidade universidade = aluno.getUniversidade();
                 if (universidade != null) {
                     authResponseBuilder.universidadeId(universidade.getId());
                     authResponseBuilder.universidadeNome(universidade.getNome());
