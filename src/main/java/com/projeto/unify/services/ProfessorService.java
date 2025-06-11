@@ -1,6 +1,7 @@
 package com.projeto.unify.services;
 
 import com.projeto.unify.dtos.ProfessorDTO;
+import com.projeto.unify.dtos.TurmaProfessorDTO;
 import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.AlunoRepository;
 import com.projeto.unify.repositories.FuncionarioRepository;
@@ -259,6 +260,27 @@ public class ProfessorService {
     public Professor buscarProfessorPorId(Long id) {
         return professorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado com o ID: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public Professor buscarPorUsuario(Usuario usuario) {
+        return professorRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor não encontrado para o usuário fornecido."));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TurmaProfessorDTO> buscarTurmasDoProfessor(Long professorId) {
+        Professor professor = buscarProfessorPorId(professorId);
+        return professor.getTurmas().stream()
+                .map(turma -> new TurmaProfessorDTO(
+                        turma.getId(),
+                        turma.getMateria().getTitulo(),
+                        turma.getTurno(),
+                        turma.getDiaSemana(),
+                        turma.getCampus(),
+                        turma.getAlunos().size()
+                ))
+                .toList();
     }
 
     @Transactional

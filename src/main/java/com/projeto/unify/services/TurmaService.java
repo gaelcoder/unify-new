@@ -170,6 +170,10 @@ public class TurmaService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turma não encontrada."));
     }
 
+    public Turma buscarTurmaPorId(Long turmaId) {
+        return findById(turmaId);
+    }
+
     public Turma findByIdAndLoggedInUserUniversity(Long turmaId) {
         Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
         return turmaRepository.findByIdAndProfessor_Universidade(turmaId, uniFuncionario)
