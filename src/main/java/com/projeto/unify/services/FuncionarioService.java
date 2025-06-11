@@ -274,29 +274,21 @@ public class FuncionarioService {
         if (isAdminGeral) {
             // ADMIN_GERAL: Decide strategy - list all, or require filter, or error for this specific method
             // For now, let's allow listing all if no specific university context for admin geral is enforced here
-            return funcionarioRepository.findAll(); 
+            return funcionarioRepository.findAllWithDetails(); 
         }
         
         Universidade universidade = getUniversidadeDoUsuarioLogado();
-        return funcionarioRepository.findByUniversidadeId(universidade.getId());
+        return funcionarioRepository.findByUniversidadeIdWithDetails(universidade.getId());
     }
 
     @Transactional(readOnly = true)
     public Funcionario buscarPorIdEUniversidadeDoUsuarioLogado(Long id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        boolean isAdminGeral = authentication.getAuthorities().stream()
-                                    .anyMatch(a -> a.getAuthority().equals(Perfil.TipoPerfil.ROLE_ADMIN_GERAL.toString()));
+        Universidade universidade = getUniversidadeDoUsuarioLogado();
 
-        Funcionario funcionario = funcionarioRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado com ID: " + id));
+        Funcionario funcionario = funcionarioRepository.findByIdAndUniversidadeWithDetails(id, universidade)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Funcionário não encontrado nesta universidade."));
 
-        if (!isAdminGeral) {
-            // This will now correctly use the updated getUniversidadeDoUsuarioLogado which checks for Admin_Uni or Func_RH
-            Universidade universidadeDoUsuario = getUniversidadeDoUsuarioLogado(); 
-            if (funcionario.getUniversidade() == null || !funcionario.getUniversidade().getId().equals(universidadeDoUsuario.getId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Funcionário não pertence à universidade do usuário logado ou não está associado a uma universidade.");
-            }
-        }
         return funcionario;
     }
 

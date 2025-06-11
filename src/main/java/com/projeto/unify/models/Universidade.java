@@ -1,6 +1,7 @@
 package com.projeto.unify.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -58,7 +59,7 @@ public class Universidade {
 
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "representante_id")
-    @JsonIgnore
+    @JsonManagedReference("universidade-representante")
     private Representante representante;
 
 

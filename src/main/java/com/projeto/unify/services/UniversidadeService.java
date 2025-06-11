@@ -118,8 +118,8 @@ public class UniversidadeService {
     }
 
     public List<Universidade> listarTodos() {
-        logger.debug("Listando todas as universidades");
-        return universidadeRepository.findAll();
+        logger.debug("Listando todas as universidades com representantes");
+        return universidadeRepository.findAllWithRepresentante();
     }
 
     public Universidade buscarPorId(Long id) {

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -47,6 +48,7 @@ public class Usuario {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "universidade_id")
+    @JsonIgnore
     private Universidade universidade;
 
     public void adicionarPerfil(Perfil perfil) {
@@ -61,5 +63,8 @@ public class Usuario {
         this.ativo = ativo;
     }
 
-
+    public Usuario(String email, String senha) {
+        this.email = email;
+        this.senha = senha;
+    }
 }
