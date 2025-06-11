@@ -161,7 +161,7 @@ public class PdfService {
             table.addCell(logoCell);
         } catch (Exception e) {
             e.printStackTrace();
-            table.addCell(new Cell().add(new Paragraph("")).setBorder(null)); // Célula vazia em caso de erro
+            table.addCell(new Cell().add(new Paragraph("")).setBorder(null));
         }
 
         // Coluna do Texto
@@ -170,7 +170,7 @@ public class PdfService {
         LocalDateTime now = LocalDateTime.now();
         String dataGeracao = dtf.format(now);
 
-        Paragraph p = new Paragraph("Documento gerado em parceria com o sistema Unify em " + dataGeracao)
+        Paragraph p = new Paragraph("Documento gerado com o sistema Unify em " + dataGeracao)
                 .setFont(italic)
                 .setFontSize(8)
                 .setTextAlignment(TextAlignment.CENTER);

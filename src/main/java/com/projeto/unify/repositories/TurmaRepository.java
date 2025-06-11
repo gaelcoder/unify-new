@@ -1,5 +1,6 @@
 package com.projeto.unify.repositories;
 
+import com.projeto.unify.models.Aluno;
 import com.projeto.unify.models.Professor;
 import com.projeto.unify.models.Turma;
 import com.projeto.unify.models.Universidade;
@@ -27,10 +28,16 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
     boolean existsByProfessorAndTurnoAndDiaSemana(Professor professor, String turno, String diaSemana);
 
     @Query("SELECT t FROM Turma t JOIN t.alunos a WHERE a.id = :alunoId")
-    List<Turma> findAllByAlunos_Id(@Param("alunoId") Long alunoId);
+    List<Turma> findAllByAlunoId(@Param("alunoId") Long alunoId);
 
     @Query("SELECT t FROM Turma t JOIN FETCH t.materia JOIN FETCH t.professor JOIN t.alunos a WHERE a.id = :alunoId")
     List<Turma> findAllByAlunoIdWithDetails(@Param("alunoId") Long alunoId);
+
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Turma t JOIN t.alunos a WHERE a IN :alunos AND t.turno = :turno AND t.diaSemana = :diaSemana")
+    boolean existsByAlunosInAndTurnoAndDiaSemana(@Param("alunos") List<Aluno> alunos, @Param("turno") String turno, @Param("diaSemana") String diaSemana);
+
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Turma t JOIN t.alunos a WHERE a IN :alunos AND t.turno = :turno AND t.diaSemana = :diaSemana AND t.id <> :turmaId")
+    boolean existsByAlunosInAndTurnoAndDiaSemanaAndIdNot(@Param("alunos") List<Aluno> alunos, @Param("turno") String turno, @Param("diaSemana") String diaSemana, @Param("turmaId") Long turmaId);
 
     // Add other Turma-specific query methods if needed
 }

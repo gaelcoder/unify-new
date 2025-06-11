@@ -9,6 +9,7 @@ import com.projeto.unify.repositories.ProfessorRepository;
 import com.projeto.unify.repositories.RepresentanteRepository;
 import com.projeto.unify.repositories.UsuarioRepository;
 import com.projeto.unify.repositories.GraduacaoRepository;
+import com.projeto.unify.repositories.TurmaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +51,7 @@ public class ProfessorService {
     private final PerfilService perfilService;
     private final EmailService emailService;
     private final GraduacaoRepository graduacaoRepository;
+    private final TurmaRepository turmaRepository;
 
     @Transactional
     public Professor criar(ProfessorDTO dto) {
@@ -247,7 +253,7 @@ public class ProfessorService {
     @Transactional(readOnly = true)
     public List<Professor> listarTodosPorUniversidadeDoUsuarioLogado() {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
-        return professorRepository.findByUniversidadeId(universidade.getId());
+        return professorRepository.findByUniversidade(universidade);
     }
 
     @Transactional(readOnly = true)
@@ -368,6 +374,27 @@ public class ProfessorService {
         return professoresDaUniversidade.stream()
                 .filter(professor -> !idsCoordenadores.contains(professor.getId()))
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<Professor> listarProfessoresDisponiveis(String diaSemana, String turno, Long turmaId) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        String diaSemanaSanitized = diaSemana.trim().toUpperCase().replace("-FEIRA", "");
+        String turnoSanitized = turno.trim().toUpperCase();
+
+        List<Professor> professoresDisponiveis = professorRepository.findProfessoresDisponiveis(
+                universidade.getId(), diaSemanaSanitized, turnoSanitized
+        );
+
+        if (turmaId != null) {
+            turmaRepository.findById(turmaId).ifPresent(turma -> {
+                Professor professorAtual = turma.getProfessor();
+                if (professoresDisponiveis.stream().noneMatch(p -> p.getId().equals(professorAtual.getId()))) {
+                    professoresDisponiveis.add(professorAtual);
+                }
+            });
+        }
+
+        return professoresDisponiveis;
     }
 
 }

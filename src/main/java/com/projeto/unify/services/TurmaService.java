@@ -90,11 +90,16 @@ public class TurmaService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Número de alunos excede o limite da turma.");
             }
             List<Aluno> alunos = alunoRepository.findAllById(dto.getAlunoIds());
-            alunos.forEach(aluno -> {
+            for (Aluno aluno : alunos) {
+                boolean alunoJaTemTurmaNoTurno = turmaRepository.existsByAlunosInAndTurnoAndDiaSemana(List.of(aluno), turnoSanitized, diaSemanaSanitized);
+                if (alunoJaTemTurmaNoTurno) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "O aluno " + aluno.getNome() + " já está em outra turma na " + dto.getDiaSemana() + " no turno da " + dto.getTurno() + ".");
+                }
                 if (!aluno.getUniversidade().getId().equals(universidade.getId())) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno " + aluno.getNome() + " (ID: " + aluno.getId() + ") não pertence à sua universidade.");
                 }
-            });
+            }
             turma.setAlunos(alunos);
         } else {
             turma.setAlunos(new ArrayList<>());
@@ -127,11 +132,16 @@ public class TurmaService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Número de alunos excede o limite da turma.");
             }
             List<Aluno> novosAlunos = alunoRepository.findAllById(dto.getAlunoIds());
-            novosAlunos.forEach(aluno -> {
+            for (Aluno aluno : novosAlunos) {
+                boolean alunoJaTemTurmaNoTurno = turmaRepository.existsByAlunosInAndTurnoAndDiaSemanaAndIdNot(List.of(aluno), turma.getTurno(), turma.getDiaSemana(), turmaId);
+                if (alunoJaTemTurmaNoTurno) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "O aluno " + aluno.getNome() + " já está em outra turma na " + turma.getDiaSemana() + " no turno da " + turma.getTurno() + ".");
+                }
                 if (!aluno.getUniversidade().getId().equals(universidade.getId())) {
                      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno " + aluno.getNome() + " (ID: " + aluno.getId() + ") não pertence à sua universidade.");
                 }
-            });
+            }
             turma.setAlunos(new ArrayList<>(novosAlunos));
         }
 
@@ -140,7 +150,7 @@ public class TurmaService {
     }
 
     @Transactional(readOnly = true)
-    public List<Aluno> findEligibleStudents(String campus, Long materiaId) {
+    public List<Aluno> findEligibleStudents(String campus, Long materiaId, String diaSemana, String turno) {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
         Materia materia = materiaRepository.findById(materiaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada."));
@@ -151,7 +161,28 @@ public class TurmaService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Matéria não pertence à sua universidade.");
         }
 
-        return alunoRepository.findAlunosElegiveisParaTurma(universidade.getId(), campus, materiaId);
+        String diaSemanaSanitized = sanitizeDiaSemana(diaSemana);
+        String turnoSanitized = sanitizeTurno(turno);
+
+        return alunoRepository.findAlunosElegiveisParaTurma(universidade.getId(), campus, materiaId, diaSemanaSanitized, turnoSanitized);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Aluno> findEligibleStudentsForEdit(Long turmaId, String campus, Long materiaId, String diaSemana, String turno) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        Materia materia = materiaRepository.findById(materiaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada."));
+
+        boolean materiaPertenceUniversidade = materia.getGraduacoes().stream()
+                .anyMatch(graduacao -> graduacao.getUniversidade().equals(universidade));
+        if (!materiaPertenceUniversidade) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Matéria não pertence à sua universidade.");
+        }
+
+        String diaSemanaSanitized = sanitizeDiaSemana(diaSemana);
+        String turnoSanitized = sanitizeTurno(turno);
+
+        return alunoRepository.findAlunosElegiveisParaTurmaComEdicao(universidade.getId(), campus, materiaId, diaSemanaSanitized, turnoSanitized, turmaId);
     }
 
     public List<TurmaDTO> findAllByLoggedInUserUniversity() {

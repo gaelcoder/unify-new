@@ -59,6 +59,15 @@ public class FuncionarioSecretariaController {
         return ResponseEntity.ok(professores);
     }
 
+    @GetMapping("/professores/disponiveis")
+    public ResponseEntity<List<Professor>> listarProfessoresDisponiveis(
+            @RequestParam String diaSemana,
+            @RequestParam String turno,
+            @RequestParam(required = false) Long turmaId) {
+        List<Professor> professores = professorService.listarProfessoresDisponiveis(diaSemana, turno, turmaId);
+        return ResponseEntity.ok(professores);
+    }
+
     // --- Graduacao CRUD Endpoints ---
 
     @PostMapping("/graduacoes")
@@ -177,8 +186,16 @@ public class FuncionarioSecretariaController {
     @GetMapping("/turmas/alunos-elegiveis")
     public ResponseEntity<List<Aluno>> getAlunosElegiveis(
             @RequestParam String campus,
-            @RequestParam Long materiaId) {
-        List<Aluno> alunos = turmaService.findEligibleStudents(campus, materiaId);
+            @RequestParam Long materiaId,
+            @RequestParam String diaSemana,
+            @RequestParam String turno,
+            @RequestParam(required = false) Long turmaId) {
+        List<Aluno> alunos;
+        if (turmaId != null) {
+            alunos = turmaService.findEligibleStudentsForEdit(turmaId, campus, materiaId, diaSemana, turno);
+        } else {
+            alunos = turmaService.findEligibleStudents(campus, materiaId, diaSemana, turno);
+        }
         return ResponseEntity.ok(alunos);
     }
 

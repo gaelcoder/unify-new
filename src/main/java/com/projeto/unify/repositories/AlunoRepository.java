@@ -34,14 +34,36 @@ public interface AlunoRepository extends JpaRepository<Aluno, Long> {
     boolean existsByEmailAndIdNot(String email, Long id);
     boolean existsByCpfAndIdNot(String cpf, Long id);
 
-    @Query(value = "SELECT a.* FROM aluno a " +
-           "INNER JOIN materia_graduacao mg ON a.graduacao_id = mg.graduacao_id " +
-           "WHERE a.universidade_id = :universidadeId " +
+    @Query("SELECT a FROM Aluno a JOIN a.graduacao g JOIN g.materias m " +
+           "WHERE a.universidade.id = :universidadeId " +
            "AND a.campus = :campus " +
-           "AND mg.materia_id = :materiaId", nativeQuery = true)
+           "AND m.id = :materiaId " +
+           "AND ( " +
+           "  NOT EXISTS (SELECT t FROM Turma t JOIN t.alunos al WHERE al.id = a.id AND t.diaSemana = :diaSemana AND t.turno = :turno) " +
+           "  OR a.id IN (SELECT al_edit.id FROM Turma t_edit JOIN t_edit.alunos al_edit WHERE t_edit.id = :turmaId) " +
+           ")")
+    List<Aluno> findAlunosElegiveisParaTurmaComEdicao(@Param("universidadeId") Long universidadeId,
+                                                     @Param("campus") String campus,
+                                                     @Param("materiaId") Long materiaId,
+                                                     @Param("diaSemana") String diaSemana,
+                                                     @Param("turno") String turno,
+                                                     @Param("turmaId") Long turmaId);
+
+    @Query("SELECT a FROM Aluno a JOIN a.graduacao g JOIN g.materias m " +
+           "WHERE a.universidade.id = :universidadeId " +
+           "AND a.campus = :campus " +
+           "AND m.id = :materiaId " +
+           "AND NOT EXISTS (" +
+           "  SELECT t FROM Turma t JOIN t.alunos al " +
+           "  WHERE al.id = a.id " +
+           "  AND t.diaSemana = :diaSemana " +
+           "  AND t.turno = :turno" +
+           ")")
     List<Aluno> findAlunosElegiveisParaTurma(@Param("universidadeId") Long universidadeId,
                                             @Param("campus") String campus,
-                                            @Param("materiaId") Long materiaId);
+                                            @Param("materiaId") Long materiaId,
+                                            @Param("diaSemana") String diaSemana,
+                                            @Param("turno") String turno);
 
     @Query("SELECT a FROM Aluno a JOIN FETCH a.graduacao WHERE a.universidade = :universidade")
     List<Aluno> findByUniversidadeWithGraduacao(@Param("universidade") Universidade universidade);
