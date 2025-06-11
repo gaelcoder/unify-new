@@ -105,6 +105,7 @@ public class FuncionarioService {
             perfilFuncionario = perfilService.obterOuCriarPerfil(Perfil.TipoPerfil.ROLE_FUNCIONARIO);
         }
         novoUsuarioFuncionario.setPerfis(Set.of(perfilFuncionario));
+        novoUsuarioFuncionario.setUniversidade(universidadeDoAdminOuRH);
 
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuarioFuncionario);
 

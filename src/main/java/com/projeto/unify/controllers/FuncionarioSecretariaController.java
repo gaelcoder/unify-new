@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/funcionariosecretaria")
@@ -136,14 +137,14 @@ public class FuncionarioSecretariaController {
     }
 
     @GetMapping("/alunos")
-    public ResponseEntity<List<Aluno>> listarAlunos() {
-        List<Aluno> alunos = alunoService.listarPorUniversidadeDoFuncionarioLogado();
+    public ResponseEntity<List<Map<String, Object>>> listarAlunos() {
+        List<Map<String, Object>> alunos = alunoService.listarAlunosComGraduacao();
         return ResponseEntity.ok(alunos);
     }
 
     @GetMapping("/alunos/{id}")
-    public ResponseEntity<Aluno> buscarAlunoPorId(@PathVariable Long id) {
-        Aluno aluno = alunoService.buscarPorIdEUniversidadeDoFuncionarioLogado(id);
+    public ResponseEntity<Map<String, Object>> buscarAlunoPorId(@PathVariable Long id) {
+        Map<String, Object> aluno = alunoService.buscarAlunoDTOPorId(id);
         return ResponseEntity.ok(aluno);
     }
 

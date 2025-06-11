@@ -32,7 +32,6 @@ public class Solicitacao {
 
     public enum StatusSolicitacao {
         ABERTA,
-        EM_ANALISE,
         CONCLUIDA,
         REJEITADA
     }

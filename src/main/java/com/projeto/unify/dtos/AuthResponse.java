@@ -18,4 +18,5 @@ public class AuthResponse {
     private Long universidadeId;
     private String universidadeNome;
     private String universidadeLogoPath;
+    private Long alunoId;
 }

@@ -380,4 +380,9 @@ public class UniversidadeService {
                 })
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Universidade não encontrada para o usuário ou perfil não mapeado."));
     }
+
+    public List<String> getCampi(Long id) {
+        Universidade universidade = buscarPorId(id);
+        return universidade.getCampus();
+    }
 }

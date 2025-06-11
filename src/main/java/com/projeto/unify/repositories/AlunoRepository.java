@@ -42,4 +42,7 @@ public interface AlunoRepository extends JpaRepository<Aluno, Long> {
     List<Aluno> findAlunosElegiveisParaTurma(@Param("universidadeId") Long universidadeId,
                                             @Param("campus") String campus,
                                             @Param("materiaId") Long materiaId);
+
+    @Query("SELECT a FROM Aluno a JOIN FETCH a.graduacao WHERE a.universidade = :universidade")
+    List<Aluno> findByUniversidadeWithGraduacao(@Param("universidade") Universidade universidade);
 } 

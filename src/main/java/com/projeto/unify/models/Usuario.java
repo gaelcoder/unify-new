@@ -45,6 +45,10 @@ public class Usuario {
     )
     private Set<Perfil> perfis = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "universidade_id")
+    private Universidade universidade;
+
     public void adicionarPerfil(Perfil perfil) {
         this.perfis.add(perfil);
     }

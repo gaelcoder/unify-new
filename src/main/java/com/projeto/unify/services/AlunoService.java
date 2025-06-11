@@ -19,6 +19,9 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import jakarta.persistence.EntityManager;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -58,12 +61,10 @@ public class AlunoService {
             }
         }
 
-        // Se nenhuma universidade foi determinada
         if (universidadeDoAluno == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não foi possível determinar a universidade para o aluno. Verifique se o usuário logado (funcionário/admin universidade) está corretamente associado a uma universidade ou forneça uma ID de universidade no DTO.");
         }
 
-        // Graduacao Validation and Fetching
         if (dto.getGraduacaoId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID da Graduação é obrigatório.");
         }
@@ -189,10 +190,70 @@ public class AlunoService {
         return alunoRepository.findByUniversidade(universidade);
     }
 
+    public List<Map<String, Object>> listarAlunosComGraduacao() {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        List<Aluno> alunos = alunoRepository.findByUniversidadeWithGraduacao(universidade);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Aluno aluno : alunos) {
+            Map<String, Object> alunoMap = new HashMap<>();
+            alunoMap.put("id", aluno.getId());
+            alunoMap.put("cpf", aluno.getCpf());
+            alunoMap.put("dataNascimento", aluno.getDataNascimento());
+            alunoMap.put("nome", aluno.getNome());
+            alunoMap.put("sobrenome", aluno.getSobrenome());
+            alunoMap.put("email", aluno.getEmail());
+            alunoMap.put("telefone", aluno.getTelefone());
+            alunoMap.put("matricula", aluno.getMatricula());
+            alunoMap.put("cr", aluno.getCr());
+            alunoMap.put("campus", aluno.getCampus());
+
+            if (aluno.getGraduacao() != null) {
+                Map<String, Object> graduacaoMap = new HashMap<>();
+                graduacaoMap.put("id", aluno.getGraduacao().getId());
+                graduacaoMap.put("titulo", aluno.getGraduacao().getTitulo());
+                alunoMap.put("graduacao", graduacaoMap);
+            } else {
+                alunoMap.put("graduacao", null);
+            }
+
+            result.add(alunoMap);
+        }
+        return result;
+    }
+
     public Aluno buscarPorIdEUniversidadeDoFuncionarioLogado(Long id) {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
         return alunoRepository.findByIdAndUniversidade(id, universidade)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado ou não pertence à sua universidade."));
+    }
+
+    public Map<String, Object> buscarAlunoDTOPorId(Long id) {
+        Universidade universidade = getUniversidadeDoFuncionarioLogado();
+        Aluno aluno = alunoRepository.findByIdAndUniversidade(id, universidade)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado ou não pertence à sua universidade."));
+
+        Map<String, Object> alunoMap = new HashMap<>();
+        alunoMap.put("id", aluno.getId());
+        alunoMap.put("cpf", aluno.getCpf());
+        alunoMap.put("dataNascimento", aluno.getDataNascimento());
+        alunoMap.put("nome", aluno.getNome());
+        alunoMap.put("sobrenome", aluno.getSobrenome());
+        alunoMap.put("email", aluno.getEmail());
+        alunoMap.put("telefone", aluno.getTelefone());
+        alunoMap.put("matricula", aluno.getMatricula());
+        alunoMap.put("cr", aluno.getCr());
+        alunoMap.put("campus", aluno.getCampus());
+
+        if (aluno.getGraduacao() != null) {
+            Map<String, Object> graduacaoMap = new HashMap<>();
+            graduacaoMap.put("id", aluno.getGraduacao().getId());
+            graduacaoMap.put("titulo", aluno.getGraduacao().getTitulo());
+            graduacaoMap.put("campusDisponiveis", aluno.getGraduacao().getCampusDisponiveis());
+            alunoMap.put("graduacao", graduacaoMap);
+        } else {
+            alunoMap.put("graduacao", null);
+        }
+        return alunoMap;
     }
 
     @Transactional
@@ -256,29 +317,16 @@ public class AlunoService {
 
     @Transactional
     public void deletar(Long alunoId) {
-        Aluno aluno = buscarPorIdEUniversidadeDoFuncionarioLogado(alunoId); // Ensures it belongs to secretary's university
-
-        // TODO: Comprehensive deletion logic:
-        // 1. Disenroll from Turmas: Iterate turma.getAlunos().remove(aluno)
-        // 2. Delete/Disable associated Usuario: 
-        //    - If Usuario is only for this Aluno, can delete usuarioRepository.delete(aluno.getUsuario()).
-        //    - Or mark Usuario as inactive.
-        // 3. Handle other potential references.
-        // For now, a basic deletion of Aluno which might leave Usuario orphaned.
-        // A better approach for Usuario: If Aluno has a Usuario, fetch it and remove Aluno role. If no other roles, then delete/disable Usuario.
-
+        Aluno aluno = buscarPorIdEUniversidadeDoFuncionarioLogado(alunoId);
         Usuario usuarioDoAluno = aluno.getUsuario();
         alunoRepository.delete(aluno);
 
         if (usuarioDoAluno != null) {
-            // Simplistic: if user has only ALUNO role and no other associations (e.g. not also a professor), delete user.
-            // A more robust check would be needed in a real scenario.
             boolean podeDeletarUsuario = usuarioDoAluno.getPerfis().stream().anyMatch(p -> p.getNome() == Perfil.TipoPerfil.ROLE_ALUNO)
                                      && usuarioDoAluno.getPerfis().size() == 1;
             // And no other direct links from Funcionario, Professor, etc. tables to this Usuario ID.
 
             if (podeDeletarUsuario) {
-                 // Check if this usuario is linked to other entities like Funcionario, Professor, Rep etc.
                 if (!funcionarioRepository.findByUsuarioId(usuarioDoAluno.getId()).isPresent() &&
                     !professorRepository.findByUsuarioId(usuarioDoAluno.getId()).isPresent() &&
                     !representanteRepository.findByUsuarioId(usuarioDoAluno.getId()).isPresent()) {

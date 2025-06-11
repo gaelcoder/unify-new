@@ -106,6 +106,7 @@ public class AuthController {
             Optional<Aluno> alunoOpt = alunoRepository.findByUsuario(usuario);
             if (alunoOpt.isPresent()) {
                 Aluno aluno = alunoOpt.get();
+                authResponseBuilder.alunoId(aluno.getId());
                 Universidade universidade = aluno.getUniversidade();
                 if (universidade != null) {
                     authResponseBuilder.universidadeId(universidade.getId());

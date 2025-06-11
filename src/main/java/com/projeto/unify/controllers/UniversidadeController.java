@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/universidades")
 @RequiredArgsConstructor
@@ -21,6 +23,13 @@ public class UniversidadeController {
     public ResponseEntity<UniversidadeCampusDTO> getMinhaUniversidade() {
         Universidade universidade = universidadeService.findMyUniversity();
         return ResponseEntity.ok(new UniversidadeCampusDTO(universidade));
+    }
+
+    @GetMapping("/{id}/campi")
+    @PreAuthorize("hasAnyAuthority('ROLE_FUNCIONARIO', 'ROLE_ADMIN_UNIVERSIDADE')")
+    public ResponseEntity<List<String>> getCampi(@PathVariable Long id) {
+        List<String> campi = universidadeService.getCampi(id);
+        return ResponseEntity.ok(campi);
     }
 
     @GetMapping("/{id}")

@@ -118,6 +118,7 @@ public class ProfessorService {
         perfilProfessor = perfilService.obterOuCriarPerfil(Perfil.TipoPerfil.ROLE_PROFESSOR);
         
         novoUsuarioProfessor.setPerfis(Set.of(perfilProfessor));
+        novoUsuarioProfessor.setUniversidade(universidadeDoRH);
 
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuarioProfessor);
 
