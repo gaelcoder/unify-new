@@ -39,7 +39,6 @@ public class JwtService {
     public String gerarToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
 
-        // Add authorities to claims
         String authorities = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));

@@ -25,12 +25,10 @@ public interface AlunoRepository extends JpaRepository<Aluno, Long> {
     @Query("SELECT COUNT(a) FROM Aluno a WHERE a.universidade = :universidade AND a.matricula LIKE CONCAT(:prefixoMatricula, '%')")
     long countByUniversidadeAndMatriculaStartingWith(@Param("universidade") Universidade universidade, @Param("prefixoMatricula") String prefixoMatricula);
 
-    // Methods for FuncionarioSecretaria CRUD
     List<Aluno> findByUniversidade(Universidade universidade);
     Optional<Aluno> findByIdAndUniversidade(Long id, Universidade universidade);
     long countByUniversidadeId(Long universidadeId);
 
-    // Methods for conflict checking during updates
     boolean existsByEmailAndIdNot(String email, Long id);
     boolean existsByCpfAndIdNot(String cpf, Long id);
 

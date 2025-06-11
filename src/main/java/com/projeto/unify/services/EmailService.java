@@ -28,12 +28,11 @@ public class EmailService {
                 "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>" +
                         "<h2 style='color: #4285f4;'>Bem-vindo ao UniFy!</h2>" +
                         "<p>Olá, " + nomeDestinatario + "!</p>" +
-                        "<p>Suas credenciais de acesso ao sistema UniFy como administrador foram criadas:</p>" +
+                        "<p>Suas credenciais de acesso ao sistema Unify foram criadas:</p>" +
                         "<p><strong>Email institucional:</strong> " + emailInstitucional + "</p>" +
                         "<p><strong>Senha temporária:</strong> " + senha + "</p>" +
                         "<p style='color: red;'><strong>IMPORTANTE:</strong> " +
                         "Você deverá alterar esta senha no seu primeiro acesso ao sistema.</p>" +
-                        "<p>Para acessar o sistema, <a href='https://unify.edu.com/login'>clique aqui</a>.</p>" +
                         "<p>Atenciosamente,<br>Equipe UniFy</p>" +
                         "</div>";
 

@@ -39,5 +39,4 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
     @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Turma t JOIN t.alunos a WHERE a IN :alunos AND t.turno = :turno AND t.diaSemana = :diaSemana AND t.id <> :turmaId")
     boolean existsByAlunosInAndTurnoAndDiaSemanaAndIdNot(@Param("alunos") List<Aluno> alunos, @Param("turno") String turno, @Param("diaSemana") String diaSemana, @Param("turmaId") Long turmaId);
 
-    // Add other Turma-specific query methods if needed
 }

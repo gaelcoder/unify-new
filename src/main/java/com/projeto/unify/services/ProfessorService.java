@@ -291,9 +291,8 @@ public class ProfessorService {
 
     @Transactional
     public Professor atualizarProfessor(Long id, ProfessorDTO dto) {
-        Professor professor = buscarProfessorPorId(id); // Reuses the findById logic
+        Professor professor = buscarProfessorPorId(id);
 
-        // Basic field updates
         professor.setNome(dto.getNome());
         professor.setSobrenome(dto.getSobrenome());
         professor.setDataNascimento(dto.getDataNascimento());
@@ -305,21 +304,18 @@ public class ProfessorService {
         }
         professor.setTitulacao(dto.getTitulacao());
 
-        // Email Pessoal - update if provided and different, check for conflicts
         if (dto.getEmail() != null && !dto.getEmail().isBlank() && !dto.getEmail().equals(professor.getEmail())) {
-            if (usuarioRepository.existsByEmailAndIdNot(dto.getEmail(), professor.getUsuario().getId()) || // Check other users
-                alunoRepository.existsByEmailAndIdNot(dto.getEmail(), null) || // Assuming Aluno ID is not directly on Professor for this check
+            if (usuarioRepository.existsByEmailAndIdNot(dto.getEmail(), professor.getUsuario().getId()) ||
+                alunoRepository.existsByEmailAndIdNot(dto.getEmail(), null) ||
                 funcionarioRepository.existsByEmailAndIdNot(dto.getEmail(), null) ||
                 representanteRepository.existsByEmailAndIdNot(dto.getEmail(), null) ||
-                professorRepository.existsByEmailAndIdNot(dto.getEmail(), professor.getId())) { // Check other professors
+                professorRepository.existsByEmailAndIdNot(dto.getEmail(), professor.getId())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email pessoal informado já cadastrado no sistema para outro usuário.");
             }
             professor.setEmail(dto.getEmail());
         }
         
-        // CPF - update if provided and different, check for conflicts
-        // Note: CPF is highly sensitive and usually not updatable or requires special permissions.
-        // For now, allowing update but with conflict checks.
+
         if (dto.getCpf() != null && !dto.getCpf().isBlank() && !dto.getCpf().equals(professor.getCpf())) {
              if (alunoRepository.existsByCpfAndIdNot(dto.getCpf(), null) ||
                  funcionarioRepository.existsByCpfAndIdNot(dto.getCpf(), null) ||
@@ -330,7 +326,6 @@ public class ProfessorService {
             professor.setCpf(dto.getCpf());
         }
 
-        // Update associated Usuario name if professor name changes
         Usuario usuarioAssociado = professor.getUsuario();
         if (usuarioAssociado != null) {
             usuarioAssociado.setNome(professor.getNomeCompleto());
@@ -342,35 +337,21 @@ public class ProfessorService {
 
     @Transactional
     public void deletarProfessor(Long id) {
-        Professor professor = buscarProfessorPorId(id); // Ensures professor exists
-        
-        // Consider implications:
-        // 1. What if the professor is a coordinator of a course? Prevent deletion or handle reassignment.
-        //    For now, this is not handled here but should be a business rule.
-        // 2. Associated Usuario: Deactivate or delete?
-        //    For now, just deleting the professor record. The Usuario might remain or be handled by a separate process.
+        Professor professor = buscarProfessorPorId(id);
 
         professorRepository.delete(professor);
-        
-        // Optionally, delete or deactivate the associated Usuario
-        // Usuario usuarioParaDeletar = professor.getUsuario();
-        // if (usuarioParaDeletar != null) {
-        //     usuarioRepository.delete(usuarioParaDeletar); // or set to inactive
-        // }
+
     }
 
-    // Method for Graduation Form - listing professors available for coordination
     @Transactional(readOnly = true)
     public List<Professor> listarProfessoresPorUniversidadeDisponiveisParaCoordenacao(Long universidadeId) {
         List<Professor> professoresDaUniversidade = professorRepository.findByUniversidadeId(universidadeId);
         List<Long> idsCoordenadores = graduacaoRepository.findDistinctCoordenadorDoCursoIdByUniversidadeId(universidadeId);
 
         if (idsCoordenadores == null || idsCoordenadores.isEmpty()) {
-            return professoresDaUniversidade; // No coordinators found, return all professors from the university
+            return professoresDaUniversidade;
         }
 
-        // Filter out professors who are already coordinators
-        // A professor is identified by their main ID (Professor.id), and Graduacao.coordenadorDoCursoId stores this Professor.id
         return professoresDaUniversidade.stream()
                 .filter(professor -> !idsCoordenadores.contains(professor.getId()))
                 .collect(java.util.stream.Collectors.toList());

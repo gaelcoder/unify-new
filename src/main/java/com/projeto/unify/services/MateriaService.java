@@ -112,9 +112,6 @@ public class MateriaService {
     public List<Materia> listarMateriasPorUniversidadeDoFuncionarioLogado() {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
         List<Materia> materias = materiaRepository.findByUniversidade(universidade);
-        // Ensure graduations are loaded if needed for DTO mapping or direct serialization
-        // For now, relying on Jackson config and eager/default fetching for ManyToMany related data if not too deep.
-        // Consider a DTO if serialization becomes an issue.
         return materias;
     }
 
@@ -129,11 +126,6 @@ public class MateriaService {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
         Materia materia = materiaRepository.findByIdAndUniversidade(materiaId, universidade)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matéria não encontrada para exclusão ou não pertence à sua universidade."));
-        
-        // Disassociation from graduations will be handled by JPA on entity removal due to @JoinTable ownership.
-        // If there were other direct bidirectional child relationships owned by Materia, they might need explicit handling.
-        // Also, ensure no Turmas are using this Materia before deletion, or handle that linkage.
-        // For now, simple deletion. Add checks for Turmas if necessary.
         if (!materia.getTurmas().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Matéria não pode ser excluída pois está associada a uma ou mais turmas.");
         }

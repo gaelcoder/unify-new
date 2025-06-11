@@ -62,8 +62,6 @@ public class Universidade {
     @JsonManagedReference("universidade-representante")
     private Representante representante;
 
-
-    // Constructor with logoPath
     public Universidade(String nome, String cnpj, LocalDate fundacao, String sigla, String logoPath, Representante representante, List<String> campus
     ) {
         this.nome = nome;

@@ -12,7 +12,7 @@ import com.projeto.unify.models.Universidade;
 
 @Repository
 public interface GraduacaoRepository extends JpaRepository<Graduacao, Long> {
-    // You can add custom query methods here if needed in the future
+
     List<Graduacao> findByUniversidade(Universidade universidade);
     Optional<Graduacao> findByIdAndUniversidade(Long id, Universidade universidade);
 

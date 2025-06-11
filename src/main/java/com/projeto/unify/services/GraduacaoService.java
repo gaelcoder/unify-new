@@ -27,12 +27,11 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class GraduacaoService {
 
-    // private static final Logger logger = LoggerFactory.getLogger(GraduacaoService.class);
     private final GraduacaoRepository graduacaoRepository;
     private final FuncionarioRepository funcionarioRepository;
-    private final UsuarioService usuarioService; // To get current user details
-    private final ProfessorRepository professorRepository; // To assign coordenador
-    private final UniversidadeRepository universidadeRepository; // Added if needed for fetching Universidade by ID
+    private final UsuarioService usuarioService;
+    private final ProfessorRepository professorRepository;
+    private final UniversidadeRepository universidadeRepository;
 
     private Funcionario getFuncionarioLogado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -97,10 +96,10 @@ public class GraduacaoService {
              throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário não está associado a uma universidade.");
         }
         List<Graduacao> graduacoes = graduacaoRepository.findByUniversidade(universidadeDoFuncionario);
-        // Eagerly initialize the campusDisponiveis collection for each Graduacao
+
         if (graduacoes != null) {
             for (Graduacao g : graduacoes) {
-                g.getCampusDisponiveis().size(); // Accessing the collection to ensure it's loaded
+                g.getCampusDisponiveis().size();
             }
         }
         return graduacoes;
@@ -108,8 +107,8 @@ public class GraduacaoService {
 
     @Transactional
     public Graduacao atualizar(Long id, GraduacaoDTO dto) {
-        Graduacao graduacaoExistente = buscarPorId(id); // Ensures it exists and user has access
-        Universidade universidadeDoFuncionario = getUniversidadeDoFuncionarioLogado(); // For validation
+        Graduacao graduacaoExistente = buscarPorId(id);
+        Universidade universidadeDoFuncionario = getUniversidadeDoFuncionarioLogado();
 
         graduacaoExistente.setTitulo(dto.getTitulo());
         graduacaoExistente.setSemestres(dto.getSemestres());
@@ -119,14 +118,13 @@ public class GraduacaoService {
         if (dto.getCoordenadorDoCursoId() != null) {
             Professor coordenador = professorRepository.findById(dto.getCoordenadorDoCursoId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professor (coordenador) não encontrado com o ID: " + dto.getCoordenadorDoCursoId()));
-            
-            // Validate that the chosen professor belongs to the same university
+
             if (!coordenador.getUniversidade().equals(universidadeDoFuncionario)) {
                  throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Coordenador selecionado não pertence à universidade do funcionário.");
             }
             graduacaoExistente.setCoordenadorDoCurso(coordenador);
         } else {
-            graduacaoExistente.setCoordenadorDoCurso(null); // Allow unsetting the coordinator
+            graduacaoExistente.setCoordenadorDoCurso(null);
         }
 
         return graduacaoRepository.save(graduacaoExistente);
@@ -134,7 +132,7 @@ public class GraduacaoService {
 
     @Transactional
     public void deletar(Long id) {
-        Graduacao graduacao = buscarPorId(id); // Ensures it exists and user has access
+        Graduacao graduacao = buscarPorId(id);
         graduacaoRepository.delete(graduacao);
     }
 

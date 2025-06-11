@@ -29,7 +29,6 @@ public interface FuncionarioRepository extends JpaRepository<Funcionario, Long> 
     @Query("SELECT f FROM Funcionario f LEFT JOIN FETCH f.usuario u LEFT JOIN FETCH u.universidade WHERE f.id = :id AND f.universidade = :universidade")
     Optional<Funcionario> findByIdAndUniversidadeWithDetails(@Param("id") Long id, @Param("universidade") Universidade universidade);
 
-    // Methods for conflict checking during updates
     boolean existsByEmailAndIdNot(String email, Long id);
     boolean existsByCpfAndIdNot(String cpf, Long id);
 

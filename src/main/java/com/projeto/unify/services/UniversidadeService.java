@@ -72,7 +72,7 @@ public class UniversidadeService {
                 dto.getFundacao(),
                 dto.getSigla(),
                 logoPath,
-                null, // Representante initially null, will be set if provided
+                null,
                 dto.getCampus()
         );
 
@@ -85,21 +85,16 @@ public class UniversidadeService {
                 logger.info("Associando representante ID: {} à universidade recém-criada ID: {}", representante.getId(), universidade.getId());
 
                 representante.setUniversidade(universidade);
-                universidade.setRepresentante(representante); // Set in-memory before calling service
+                universidade.setRepresentante(representante);
 
-                // Call RepresentanteService.associarRepresentante
-                // This service method handles user creation, email, and saving the Representante.
                 Representante managedRepresentante = this.representanteService.associarRepresentante(
                     universidade, 
                     representante, 
                     representante.getEmail()
                 );
 
-                // Ensure the universidade object has the managed representative from the service call
                 universidade.setRepresentante(managedRepresentante);
-                
-                // Save the universidade again using a method with REQUIRES_NEW propagation
-                // to ensure the association is persisted in its own transaction.
+
                 universidade = salvarUniversidadeTransactional(universidade);
 
                 logger.info("Representante ID: {} associado com sucesso à universidade ID: {} e credenciais criadas.", 
@@ -108,7 +103,7 @@ public class UniversidadeService {
             } catch (Exception e) {
                 logger.error("Erro ao associar representante ID {} à universidade {}: {}", 
                              representante.getId(), universidade.getNome(), e.getMessage(), e);
-                // Consider re-throwing to ensure consistency if representative association is critical
+
                  throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "Erro ao associar representante e criar usuário: " + e.getMessage(), e);
             }
@@ -130,13 +125,12 @@ public class UniversidadeService {
                     return new ResponseStatusException(
                             HttpStatus.NOT_FOUND, "Universidade não encontrada");
                 });
-        // Initialize the campus collection to ensure it's loaded
+
         if (universidade.getCampus() != null) {
-            universidade.getCampus().size(); // Accessing the collection
+            universidade.getCampus().size();
         }
-        // Initialize the representante to prevent lazy loading issues
+
         if (universidade.getRepresentante() != null) {
-            // Access a property to trigger lazy loading
             universidade.getRepresentante().getNome();
         }
         return universidade;
@@ -153,17 +147,14 @@ public class UniversidadeService {
         universidade.setCampus(dto.getCampus());
 
         if (logoFile != null && !logoFile.isEmpty()) {
-            // Delete old logo if it exists
             if (universidade.getLogoPath() != null && !universidade.getLogoPath().isEmpty()) {
                 try {
                     fileService.delete(universidade.getLogoPath());
                     logger.info("Logo antigo deletado: {}", universidade.getLogoPath());
                 } catch (Exception e) {
                     logger.warn("Falha ao deletar logo antigo: {}. Error: {}", universidade.getLogoPath(), e.getMessage());
-                    // Continue even if old logo deletion fails for some reason
                 }
             }
-            // Store new logo
             String novoLogoPath = fileService.store(logoFile);
             universidade.setLogoPath(novoLogoPath);
             logger.info("Novo logo salvo em: {}", novoLogoPath);
@@ -201,18 +192,15 @@ public class UniversidadeService {
         }
 
         try {
-            // Set relationships in memory first - these are not persisted yet
-            logger.info("Setting representative on university and vice-versa in memory");
+            logger.info("Associando representante");
             representante.setUniversidade(universidade);
             universidade.setRepresentante(representante);
 
-            // Call RepService. This runs in a new transaction and saves the Representante
-            // and its associated Usuario.
             logger.info("Calling RepresentanteService to associate and save representative details");
             Representante managedRepresentante = this.representanteService.associarRepresentante(universidade, representante, representante.getEmail());
 
-            // Now, save the universidade with its new representative in a separate transaction.
-            universidade.setRepresentante(managedRepresentante); // Ensure we use the returned, managed rep
+
+            universidade.setRepresentante(managedRepresentante);
             Universidade savedUniversidade = salvarUniversidadeTransactional(universidade);
 
             logger.info("Representante associado com sucesso e credenciais criadas");
@@ -222,13 +210,10 @@ public class UniversidadeService {
 
             if (e.getMessage() != null && e.getMessage().contains("Já existe um administrador")) {
                 logger.warn("Já existe um administrador para esta universidade, mas a associação foi realizada");
-                // Decide if you still want to return universidade or throw
-                // For now, let's re-throw to be consistent with other errors
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "Erro ao associar representante: " + e.getMessage());
             }
 
-            // Ensure a ResponseStatusException is thrown for other cases from this try-catch
             if (e instanceof ResponseStatusException) {
                 throw e;
             } else {
@@ -254,7 +239,7 @@ public class UniversidadeService {
             logger.info("Removendo associação com representante: {} {}",
                     representante.getNome(), representante.getSobrenome());
 
-            Usuario usuarioDoRepresentante = representante.getUsuario(); // Get the Usuario
+            Usuario usuarioDoRepresentante = representante.getUsuario();
 
             // Desassociar ambos os lados
             representante.setUniversidade(null);
@@ -268,7 +253,7 @@ public class UniversidadeService {
             if (usuarioDoRepresentante != null) {
                 logger.info("Desativando usuário: {}", usuarioDoRepresentante.getEmail());
                 usuarioDoRepresentante.setAtivo(false);
-                usuarioService.save(usuarioDoRepresentante); // Save using UsuarioService
+                usuarioService.save(usuarioDoRepresentante);
                 logger.info("Usuário {} desativado com sucesso.", usuarioDoRepresentante.getEmail());
             } else {
                 logger.warn("Representante {} não possui um usuário associado para desativar.", representante.getNome());
@@ -288,7 +273,6 @@ public class UniversidadeService {
         logger.info("Excluindo universidade com ID: {}", id);
         Universidade universidade = buscarPorId(id);
 
-        // Delete logo if it exists
         if (universidade.getLogoPath() != null && !universidade.getLogoPath().isEmpty()) {
             fileService.delete(universidade.getLogoPath());
             logger.info("Logo da universidade {} excluído: {}", universidade.getNome(), universidade.getLogoPath());
@@ -303,9 +287,7 @@ public class UniversidadeService {
             // Desassociar o representante da universidade. 
             // O método desassociarRepresentante em RepresentanteService cuida da lógica de desativação do usuário.
             this.representanteService.desassociarRepresentante(representante);
-            universidade.setRepresentante(null); // Garantir que a referência é removida na entidade universidade
-            // Salvar a universidade após remover o representante para persistir a mudança
-            // Isso é importante se a exclusão da universidade não for cascatear essa mudança imediatamente
+            universidade.setRepresentante(null);
             universidadeRepository.save(universidade); 
         }
 
@@ -328,8 +310,6 @@ public class UniversidadeService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Representante não associado a nenhuma universidade.");
         }
 
-        // Fetch the full university entity again to ensure all collections are available if needed
-        // and to work with the most up-to-date data.
         Universidade universidadeCompleta = universidadeRepository.findById(universidade.getId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Universidade não encontrada."));
 

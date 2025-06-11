@@ -12,7 +12,7 @@ import java.util.UUID;
 @Service
 public class FileService {
 
-    private final Path rootLocation = Paths.get("upload-dir"); // Define your upload directory
+    private final Path rootLocation = Paths.get("upload-dir");
 
     public FileService() {
         try {
@@ -29,7 +29,7 @@ public class FileService {
             }
             String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
             Files.copy(file.getInputStream(), this.rootLocation.resolve(filename));
-            return filename; // Return the generated filename
+            return filename;
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file.", e);
         }

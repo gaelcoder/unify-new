@@ -71,7 +71,6 @@ public class AlunoService {
         Graduacao graduacao = graduacaoRepository.findById(dto.getGraduacaoId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Graduação não encontrada com o ID fornecido."));
 
-        // Ensure the Graduacao belongs to the Aluno's Universidade
         if (!graduacao.getUniversidade().equals(universidadeDoAluno)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A Graduação especificada não pertence à universidade do aluno.");
         }
@@ -84,7 +83,7 @@ public class AlunoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campus '" + dto.getCampus() + "' não está disponível para a graduação '" + graduacao.getTitulo() + "'.");
         }
 
-        // CPF Validation
+
         if (dto.getCpf() != null && !dto.getCpf().isBlank()) {
             if (alunoRepository.existsByCpf(dto.getCpf()) ||
                     funcionarioRepository.existsByCpf(dto.getCpf()) ||
@@ -95,7 +94,6 @@ public class AlunoService {
             }
         }
 
-        // Email (Personal/Login) Validation
         String emailAluno = dto.getEmail(); 
         if (emailAluno != null && !emailAluno.isBlank()) {
             if (usuarioRepository.existsByEmail(emailAluno) ||
@@ -108,7 +106,6 @@ public class AlunoService {
             }
         }
 
-        // Telefone Validation
         if (dto.getTelefone() != null && !dto.getTelefone().isBlank()) {
             if (alunoRepository.existsByTelefone(dto.getTelefone()) ||
                     funcionarioRepository.existsByTelefone(dto.getTelefone()) ||
@@ -179,9 +176,6 @@ public class AlunoService {
 
         long countAlunosComPrefixo = alunoRepository.countByUniversidadeAndMatriculaStartingWith(universidade, prefixoMatricula);
         long numeroSequencial = countAlunosComPrefixo + 1;
-
-        // Formato: YYSS + numeroSequencial + "000"
-        // Example: 24101000 (Ano 24, Semestre 10, Seq 1, sufixo 000)
         return prefixoMatricula + numeroSequencial + "000";
     }
 
@@ -268,26 +262,21 @@ public class AlunoService {
         aluno.setDataNascimento(dto.getDataNascimento());
         aluno.setTelefone(dto.getTelefone());
 
-        // Email update - needs careful handling due to Usuario link
+
         if (!aluno.getEmail().equals(dto.getEmail())) {
-            // Check for email uniqueness across relevant entities (Usuario, other Pessoa types)
+
             if (usuarioRepository.existsByEmail(dto.getEmail()) && !aluno.getUsuario().getEmail().equals(dto.getEmail())) {
                  throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Novo email já cadastrado para um usuário no sistema.");
             }
-            // Potentially other checks from initial creation logic if email is widely unique
+
             aluno.setEmail(dto.getEmail());
-            // Also update the associated Usuario's email if it's meant to be kept in sync
             Usuario usuarioDoAluno = aluno.getUsuario();
             if (usuarioDoAluno != null) {
                 usuarioDoAluno.setEmail(dto.getEmail());
-                // usuarioDoAluno.setNome(dto.getNome() + " " + dto.getSobrenome()); // Also update name if it changed
                 usuarioRepository.save(usuarioDoAluno);
             }
         }
-        // CPF is usually not updatable. Matricula is generated and fixed.
-        // Universidade is fixed post-creation for an Aluno.
 
-        // Graduacao update
         if (dto.getGraduacaoId() != null && (aluno.getGraduacao() == null || !aluno.getGraduacao().getId().equals(dto.getGraduacaoId()))) {
             Graduacao novaGraduacao = graduacaoRepository.findById(dto.getGraduacaoId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nova graduação com ID " + dto.getGraduacaoId() + " não encontrada."));
@@ -324,7 +313,6 @@ public class AlunoService {
         if (usuarioDoAluno != null) {
             boolean podeDeletarUsuario = usuarioDoAluno.getPerfis().stream().anyMatch(p -> p.getNome() == Perfil.TipoPerfil.ROLE_ALUNO)
                                      && usuarioDoAluno.getPerfis().size() == 1;
-            // And no other direct links from Funcionario, Professor, etc. tables to this Usuario ID.
 
             if (podeDeletarUsuario) {
                 if (!funcionarioRepository.findByUsuarioId(usuarioDoAluno.getId()).isPresent() &&
@@ -332,8 +320,6 @@ public class AlunoService {
                     !representanteRepository.findByUsuarioId(usuarioDoAluno.getId()).isPresent()) {
                     usuarioRepository.delete(usuarioDoAluno);
                 } else {
-                    // If linked elsewhere, just remove ALUNO role or mark inactive
-                    // For simplicity here, we don't fully implement this part to avoid too much complexity now
                     System.out.println("Usuário " + usuarioDoAluno.getEmail() + " associado a outras entidades, não será deletado mas o aluno foi.");
                 }
             } else {

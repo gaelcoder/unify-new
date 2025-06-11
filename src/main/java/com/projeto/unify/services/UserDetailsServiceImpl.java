@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Primary  // Esta será a implementação padrão
+@Primary
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
