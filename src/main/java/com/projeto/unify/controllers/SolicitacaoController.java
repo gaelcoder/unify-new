@@ -70,7 +70,7 @@ public class SolicitacaoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_FUNCIONARIO')")
+    @PreAuthorize("hasAuthority('ROLE_ALUNO')")
     public ResponseEntity<Solicitacao> create(@RequestBody @Valid SolicitacaoDTO solicitacaoDTO) {
         Solicitacao novaSolicitacao = solicitacaoService.create(solicitacaoDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(novaSolicitacao);
