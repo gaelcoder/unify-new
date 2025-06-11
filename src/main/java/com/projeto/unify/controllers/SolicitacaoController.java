@@ -41,6 +41,13 @@ public class SolicitacaoController {
         return ResponseEntity.ok(solicitacoes);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ALUNO') or hasAuthority('ROLE_FUNCIONARIO')")
+    public ResponseEntity<SolicitacaoResponseDTO> getById(@PathVariable Long id) {
+        SolicitacaoResponseDTO solicitacao = solicitacaoService.findDTOById(id);
+        return ResponseEntity.ok(solicitacao);
+    }
+
     @GetMapping("/secretaria")
     @PreAuthorize("hasRole('FUNCIONARIO')")
     public ResponseEntity<List<SolicitacaoSecretariaDTO>> getForSecretaria(

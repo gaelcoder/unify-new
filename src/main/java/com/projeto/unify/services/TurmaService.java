@@ -41,6 +41,16 @@ public class TurmaService {
         return funcionario.getUniversidade();
     }
 
+    private String sanitizeDiaSemana(String diaSemana) {
+        if (diaSemana == null) return null;
+        return diaSemana.trim().toUpperCase().replace("-FEIRA", "");
+    }
+
+    private String sanitizeTurno(String turno) {
+        if (turno == null) return null;
+        return turno.trim().toUpperCase();
+    }
+
     @Transactional
     public Turma create(TurmaCreateDTO dto) {
         Universidade universidade = getUniversidadeDoFuncionarioLogado();
@@ -51,7 +61,10 @@ public class TurmaService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professor não pertence à sua universidade.");
         }
 
-        boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurnoAndDiaSemana(professor, dto.getTurno().toUpperCase(), dto.getDiaSemana().toUpperCase());
+        String turnoSanitized = sanitizeTurno(dto.getTurno());
+        String diaSemanaSanitized = sanitizeDiaSemana(dto.getDiaSemana());
+
+        boolean professorJaTemTurmaNoTurno = turmaRepository.existsByProfessorAndTurnoAndDiaSemana(professor, turnoSanitized, diaSemanaSanitized);
         if (professorJaTemTurmaNoTurno) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Professor " + professor.getNome() + " já leciona uma turma no turno da " + dto.getTurno() + " na " + dto.getDiaSemana() + ".");
@@ -67,8 +80,8 @@ public class TurmaService {
         Turma turma = new Turma();
         turma.setProfessor(professor);
         turma.setMateria(materia);
-        turma.setTurno(dto.getTurno().toUpperCase());
-        turma.setDiaSemana(dto.getDiaSemana().toUpperCase());
+        turma.setTurno(turnoSanitized);
+        turma.setDiaSemana(diaSemanaSanitized);
         turma.setCampus(dto.getCampus());
         turma.setLimiteAlunos(dto.getLimiteAlunos());
 
@@ -169,5 +182,9 @@ public class TurmaService {
         Turma turma = findByIdAndLoggedInUserUniversity(turmaId);
         turma.getAlunos().clear();
         turmaRepository.delete(turma);
+    }
+
+    public List<Turma> findAllByAlunoId(Long alunoId) {
+        return turmaRepository.findAllByAlunoIdWithDetails(alunoId);
     }
 } 

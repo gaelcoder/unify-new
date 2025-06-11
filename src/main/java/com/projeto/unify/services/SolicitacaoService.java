@@ -73,22 +73,19 @@ public class SolicitacaoService {
 
     @Transactional
     public SolicitacaoResponseDTO create(SolicitacaoCreateDTO solicitacaoDTO) {
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        Usuario usuario = usuarioService.findByEmail(userEmail);
-
-        Aluno aluno = alunoRepository.findByUsuario(usuario)
+        Aluno aluno = alunoRepository.findById(solicitacaoDTO.alunoId())
                 .orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
 
-        Solicitacao solicitacao = new Solicitacao();
-        solicitacao.setTipo(solicitacaoDTO.tipo());
-        solicitacao.setMensagem(solicitacaoDTO.mensagem());
-        solicitacao.setAluno(aluno);
-        solicitacao.setUniversidade(aluno.getUniversidade());
-        solicitacao.setStatus(Solicitacao.StatusSolicitacao.ABERTA);
-        solicitacao.setDataSolicitacao(LocalDateTime.now());
+        Solicitacao solicitacao = new Solicitacao(aluno, solicitacaoDTO.tipo(), solicitacaoDTO.mensagem());
+        solicitacao = solicitacaoRepository.save(solicitacao);
 
-        Solicitacao savedSolicitacao = solicitacaoRepository.save(solicitacao);
-        return toResponseDTO(savedSolicitacao);
+        return toResponseDTO(solicitacao);
+    }
+
+    public SolicitacaoResponseDTO findDTOById(Long id) {
+        Solicitacao solicitacao = solicitacaoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+        return toResponseDTO(solicitacao);
     }
 
     private SolicitacaoSecretariaDTO toSecretariaDTO(Solicitacao solicitacao) {

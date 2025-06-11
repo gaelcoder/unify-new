@@ -427,4 +427,9 @@ public class AlunoService {
         }
         return funcionario.getUniversidade();
     }
+
+    public Aluno buscarPorUsuario(Usuario usuario) {
+        return alunoRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado para o usuário fornecido."));
+    }
 }

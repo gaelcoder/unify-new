@@ -26,5 +26,11 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
 
     boolean existsByProfessorAndTurnoAndDiaSemana(Professor professor, String turno, String diaSemana);
 
+    @Query("SELECT t FROM Turma t JOIN t.alunos a WHERE a.id = :alunoId")
+    List<Turma> findAllByAlunos_Id(@Param("alunoId") Long alunoId);
+
+    @Query("SELECT t FROM Turma t JOIN FETCH t.materia JOIN FETCH t.professor JOIN t.alunos a WHERE a.id = :alunoId")
+    List<Turma> findAllByAlunoIdWithDetails(@Param("alunoId") Long alunoId);
+
     // Add other Turma-specific query methods if needed
 }

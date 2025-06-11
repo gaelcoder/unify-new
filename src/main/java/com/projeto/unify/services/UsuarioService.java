@@ -43,6 +43,11 @@ public class UsuarioService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
     }
 
+    public Usuario findById(Long id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
     @Transactional
     public void atualizarSenha(Long userId, String novaSenha) {
         Usuario usuario = usuarioRepository.findById(userId)

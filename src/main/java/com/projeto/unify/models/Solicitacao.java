@@ -12,6 +12,20 @@ import java.time.LocalDateTime;
 @Setter
 public class Solicitacao {
 
+    public Solicitacao() {
+    }
+
+    public Solicitacao(Aluno aluno, TipoSolicitacao tipo, String mensagem) {
+        this.aluno = aluno;
+        this.tipo = tipo;
+        this.mensagem = mensagem;
+        this.status = StatusSolicitacao.ABERTA;
+        this.dataSolicitacao = LocalDateTime.now();
+        if (aluno != null) {
+            this.universidade = aluno.getUniversidade();
+        }
+    }
+
     public enum TipoSolicitacao {
         TRC("TRC - Trancamento de Matrícula"),
         TFG("TFG - Transferência de Graduação"),
