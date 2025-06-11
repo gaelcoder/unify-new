@@ -1,6 +1,7 @@
 package com.projeto.unify.controllers;
 
-import com.projeto.unify.dtos.SolicitacaoDTO;
+import com.projeto.unify.dtos.SolicitacaoCreateDTO;
+import com.projeto.unify.dtos.SolicitacaoResponseDTO;
 import com.projeto.unify.dtos.SolicitacaoSecretariaDTO;
 import com.projeto.unify.dtos.SolicitacaoStatusUpdateDTO;
 import com.projeto.unify.models.Solicitacao;
@@ -35,8 +36,8 @@ public class SolicitacaoController {
 
     @GetMapping("/aluno/{alunoId}")
     @PreAuthorize("hasAuthority('ROLE_ALUNO') or hasAuthority('ROLE_FUNCIONARIO')")
-    public ResponseEntity<List<Solicitacao>> getByAlunoId(@PathVariable Long alunoId) {
-        List<Solicitacao> solicitacoes = solicitacaoService.findByAlunoId(alunoId);
+    public ResponseEntity<List<SolicitacaoResponseDTO>> getByAlunoId(@PathVariable Long alunoId) {
+        List<SolicitacaoResponseDTO> solicitacoes = solicitacaoService.findDTOByAlunoId(alunoId);
         return ResponseEntity.ok(solicitacoes);
     }
 
@@ -62,17 +63,17 @@ public class SolicitacaoController {
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('FUNCIONARIO')")
-    public ResponseEntity<Solicitacao> updateStatus(
+    public ResponseEntity<SolicitacaoResponseDTO> updateStatus(
             @PathVariable Long id,
             @RequestBody @Valid SolicitacaoStatusUpdateDTO statusUpdateDTO) {
-        Solicitacao solicitacao = solicitacaoService.updateStatus(id, statusUpdateDTO.status());
+        SolicitacaoResponseDTO solicitacao = solicitacaoService.updateStatus(id, statusUpdateDTO.status());
         return ResponseEntity.ok(solicitacao);
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_ALUNO')")
-    public ResponseEntity<Solicitacao> create(@RequestBody @Valid SolicitacaoDTO solicitacaoDTO) {
-        Solicitacao novaSolicitacao = solicitacaoService.create(solicitacaoDTO);
+    public ResponseEntity<SolicitacaoResponseDTO> create(@RequestBody @Valid SolicitacaoCreateDTO solicitacaoDTO) {
+        SolicitacaoResponseDTO novaSolicitacao = solicitacaoService.create(solicitacaoDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(novaSolicitacao);
     }
 } 

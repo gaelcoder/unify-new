@@ -1,6 +1,7 @@
 package com.projeto.unify.services;
 
-import com.projeto.unify.dtos.SolicitacaoDTO;
+import com.projeto.unify.dtos.SolicitacaoCreateDTO;
+import com.projeto.unify.dtos.SolicitacaoResponseDTO;
 import com.projeto.unify.dtos.SolicitacaoSecretariaDTO;
 import com.projeto.unify.models.*;
 import com.projeto.unify.repositories.AlunoRepository;
@@ -33,6 +34,22 @@ public class SolicitacaoService {
         return solicitacaoRepository.findByAlunoId(alunoId);
     }
 
+    public List<SolicitacaoResponseDTO> findDTOByAlunoId(Long alunoId) {
+        return solicitacaoRepository.findByAlunoId(alunoId).stream()
+            .map(this::toResponseDTO)
+            .collect(Collectors.toList());
+    }
+
+    private SolicitacaoResponseDTO toResponseDTO(Solicitacao solicitacao) {
+        return new SolicitacaoResponseDTO(
+                solicitacao.getId(),
+                solicitacao.getTipo(),
+                solicitacao.getMensagem(),
+                solicitacao.getStatus(),
+                solicitacao.getDataSolicitacao().toString()
+        );
+    }
+
     public List<SolicitacaoSecretariaDTO> findBySecretaria(Long idUniversidade, Optional<String> campus, Solicitacao.StatusSolicitacao status) {
         List<Solicitacao> solicitacoes;
         if (campus.isPresent()) {
@@ -46,15 +63,16 @@ public class SolicitacaoService {
     }
 
     @Transactional
-    public Solicitacao updateStatus(Long id, Solicitacao.StatusSolicitacao status) {
+    public SolicitacaoResponseDTO updateStatus(Long id, Solicitacao.StatusSolicitacao status) {
         Solicitacao solicitacao = solicitacaoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
         solicitacao.setStatus(status);
-        return solicitacaoRepository.save(solicitacao);
+        Solicitacao updatedSolicitacao = solicitacaoRepository.save(solicitacao);
+        return toResponseDTO(updatedSolicitacao);
     }
 
     @Transactional
-    public Solicitacao create(SolicitacaoDTO solicitacaoDTO) {
+    public SolicitacaoResponseDTO create(SolicitacaoCreateDTO solicitacaoDTO) {
         String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         Usuario usuario = usuarioService.findByEmail(userEmail);
 
@@ -69,7 +87,8 @@ public class SolicitacaoService {
         solicitacao.setStatus(Solicitacao.StatusSolicitacao.ABERTA);
         solicitacao.setDataSolicitacao(LocalDateTime.now());
 
-        return solicitacaoRepository.save(solicitacao);
+        Solicitacao savedSolicitacao = solicitacaoRepository.save(solicitacao);
+        return toResponseDTO(savedSolicitacao);
     }
 
     private SolicitacaoSecretariaDTO toSecretariaDTO(Solicitacao solicitacao) {
