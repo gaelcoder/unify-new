@@ -146,6 +146,25 @@ public class PdfService {
     }
 
     private void addRodape(Document document) throws IOException {
+        document.add(new Paragraph("\n"));
+
+        Table table = new Table(UnitValue.createPercentArray(new float[]{1, 4})).useAllAvailableWidth();
+        table.setBorder(null);
+
+        // Coluna do Logo Unify
+        try {
+            String rootPath = System.getProperty("user.dir");
+            String logoPath = Paths.get(rootPath, "logos-unify", "logo_unify.png").toString();
+            Image logo = new Image(ImageDataFactory.create(logoPath));
+            logo.scaleToFit(50, 50);
+            Cell logoCell = new Cell().add(logo).setBorder(null).setVerticalAlignment(VerticalAlignment.MIDDLE);
+            table.addCell(logoCell);
+        } catch (Exception e) {
+            e.printStackTrace();
+            table.addCell(new Cell().add(new Paragraph("")).setBorder(null)); // Célula vazia em caso de erro
+        }
+
+        // Coluna do Texto
         PdfFont italic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
@@ -155,8 +174,11 @@ public class PdfService {
                 .setFont(italic)
                 .setFontSize(8)
                 .setTextAlignment(TextAlignment.CENTER);
-        document.add(new Paragraph("\n"));
-        document.add(p);
+
+        Cell textCell = new Cell().add(p).setBorder(null).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        table.addCell(textCell);
+
+        document.add(table);
     }
 
     public ByteArrayInputStream gerarRelatorioTurmaPdf(Turma turma) throws IOException {
