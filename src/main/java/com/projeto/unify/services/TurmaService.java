@@ -188,7 +188,13 @@ public class TurmaService {
     public List<TurmaDTO> findAllByLoggedInUserUniversity() {
         Universidade uniFuncionario = getUniversidadeDoFuncionarioLogado();
         List<Turma> turmas = turmaRepository.findAllByProfessor_Universidade_Id(uniFuncionario.getId());
-        return turmas.stream().map(TurmaDTO::new).collect(Collectors.toList());
+        
+        // Filter out turmas that have students from different universities
+        return turmas.stream()
+            .filter(turma -> turma.getAlunos().stream()
+                .allMatch(aluno -> aluno.getUniversidade().getId().equals(uniFuncionario.getId())))
+            .map(TurmaDTO::new)
+            .collect(Collectors.toList());
     }
 
     public TurmaDTO findTurmaById(Long turmaId) {
